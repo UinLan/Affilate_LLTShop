@@ -4,3 +4,49 @@
 2025-06-23 19:45:04,192 - INFO - ✅ Đăng bài thành công với ID: 684490454749490_122096640812925790
 2025-06-23 19:47:54,066 - INFO - ✅ Đăng bài thành công với ID: 684490454749490_122096641670925790
 2025-06-23 19:54:59,885 - INFO - ✅ Đăng bài thành công với ID: 684490454749490_122096644940925790
+2025-06-23 20:23:18,838 - ERROR - Lỗi GPT: 
+
+You tried to access openai.ChatCompletion, but this is no longer supported in openai>=1.0.0 - see the README at https://github.com/openai/openai-python for the API.
+
+You can run `openai migrate` to automatically upgrade your codebase to use the 1.0.0 interface. 
+
+Alternatively, you can pin your installation to the old version, e.g. `pip install openai==0.28`
+
+A detailed migration guide is available here: https://github.com/openai/openai-python/discussions/742
+
+2025-06-23 20:23:18,838 - WARNING - GPT không tạo được caption. Dùng fallback.
+2025-06-23 20:23:29,024 - INFO - ✅ Đăng bài thành công: 684490454749490_122096678042925790
+2025-06-23 20:31:42,115 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 404 Not Found"
+2025-06-23 20:31:42,115 - ERROR - Lỗi GPT: Error code: 404 - {'error': {'message': 'The model `gpt-4` does not exist or you do not have access to it.', 'type': 'invalid_request_error', 'param': None, 'code': 'model_not_found'}}
+2025-06-23 20:31:42,115 - WARNING - GPT không tạo được caption. Dùng fallback.
+2025-06-23 20:31:51,759 - INFO - ✅ Đăng bài thành công: 684490454749490_122096682548925790
+2025-06-23 20:42:47,147 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 20:42:47,147 - INFO - Retrying request to /chat/completions in 0.487545 seconds
+2025-06-23 20:42:48,273 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 20:42:48,273 - INFO - Retrying request to /chat/completions in 0.840581 seconds
+2025-06-23 20:42:49,942 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 20:42:49,942 - ERROR - Lỗi GPT: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+2025-06-23 20:42:49,942 - WARNING - GPT không tạo được caption. Dùng fallback.
+2025-06-23 20:42:53,447 - ERROR - Lỗi tải ảnh 	https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv…shp=6ce186a1&shcp=e1be8f53&idc=my&from=1826719393: 400 Client Error: Bad Request for url: https://p16-oec-sg.ibyteimg.com/tos-alisg-i-aphluv%E2%80%A6shp=6ce186a1&shcp=e1be8f53&idc=my&from=1826719393
+2025-06-23 20:42:57,789 - INFO - ✅ Đăng bài thành công: 684490454749490_122096688794925790
+2025-06-23 21:01:19,083 - ERROR - Facebook authentication failed
+2025-06-23 21:07:25,218 - INFO - All services initialized successfully
+2025-06-23 21:07:26,550 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:07:26,550 - INFO - Retrying request to /chat/completions in 0.396101 seconds
+2025-06-23 21:07:27,876 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:07:27,876 - INFO - Retrying request to /chat/completions in 0.958515 seconds
+2025-06-23 21:07:29,621 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:07:29,621 - WARNING - OpenAI error: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+2025-06-23 21:07:32,983 - INFO - Posted successfully: 684490454749490_122096700134925790
+2025-06-23 21:13:00,727 - INFO - All services initialized successfully
+2025-06-23 21:13:02,008 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:13:02,008 - INFO - Retrying request to /chat/completions in 0.404742 seconds
+2025-06-23 21:13:02,693 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:13:02,693 - INFO - Retrying request to /chat/completions in 0.784232 seconds
+2025-06-23 21:13:03,772 - INFO - HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+2025-06-23 21:13:03,787 - WARNING - OpenAI error: Error code: 429 - {'error': {'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
+2025-06-23 21:13:06,753 - INFO - Posted successfully: 684490454749490_122096705894925790
+2025-06-23 21:24:16,241 - INFO - All services initialized successfully
+2025-06-23 21:24:20,803 - INFO - Posted successfully: 684490454749490_122096715152925790
+2025-06-23 21:30:15,713 - INFO - All services initialized successfully
+2025-06-23 21:30:31,535 - INFO - Posted successfully: 684490454749490_122096727320925790

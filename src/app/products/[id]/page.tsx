@@ -1,3 +1,4 @@
+// app/products/[id]/page.tsx
 import { notFound } from 'next/navigation';
 import Product from '@/lib/models/Product';
 import connectDB from '@/lib/mongodb';
@@ -8,16 +9,13 @@ interface ProductPageProps {
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
-  // Đảm bảo await connectDB trước khi sử dụng params
-  await connectDB();
-
   try {
-    // Sử dụng trực tiếp params.id trong await
+    await connectDB();
     const rawProduct = await Product.findById(params.id).lean();
     
     if (!rawProduct) return notFound();
 
-    const product = rawProduct as unknown as IProduct;
+    const product = JSON.parse(JSON.stringify(rawProduct)) as IProduct;
 
     return (
       <div className="max-w-3xl mx-auto p-4">
@@ -29,13 +27,18 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {product.images.map((img, idx) => (
-            <img key={idx} src={img} alt={`Image ${idx}`} className="rounded shadow" />
+            <img 
+              key={idx} 
+              src={img} 
+              alt={`${product.productName} image ${idx + 1}`} 
+              className="rounded shadow w-full h-auto"
+            />
           ))}
         </div>
       </div>
     );
   } catch (error) {
-    console.error('Lỗi khi lấy sản phẩm:', error);
+    console.error('Error fetching product:', error);
     return notFound();
   }
 }
