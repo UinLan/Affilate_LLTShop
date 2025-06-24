@@ -50,3 +50,42 @@ A detailed migration guide is available here: https://github.com/openai/openai-p
 2025-06-23 21:24:20,803 - INFO - Posted successfully: 684490454749490_122096715152925790
 2025-06-23 21:30:15,713 - INFO - All services initialized successfully
 2025-06-23 21:30:31,535 - INFO - Posted successfully: 684490454749490_122096727320925790
+2025-06-24 00:00:12,859 - INFO - All services initialized successfully
+2025-06-24 00:00:16,790 - ERROR - Failed to post product 6859881a86802b67ecc25005: Facebook post failed: (#100) param attached_media must be an array.
+Traceback (most recent call last):
+  File "C:\tiktok_to_facebook\tiktok_to_facebook.py", line 293, in process_product
+    post = self.graph.request(f"{self.fb_page_id}/feed", method="POST", post_args=post_args)
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python310\lib\site-packages\facebook\__init__.py", line 313, in request
+    raise GraphAPIError(result)
+facebook.GraphAPIError: (#100) param attached_media must be an array.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\tiktok_to_facebook\tiktok_to_facebook.py", line 297, in process_product
+    raise FacebookPostError(f"Facebook post failed: {str(e)}") from e
+FacebookPostError: Facebook post failed: (#100) param attached_media must be an array.
+2025-06-24 00:08:18,550 - INFO - All services initialized successfully
+2025-06-24 00:08:22,308 - CRITICAL - Unexpected error processing product 68598a01194db70b6a5864f5: (#100) param attached_media must be an array.
+Traceback (most recent call last):
+  File "C:\tiktok_to_facebook\tiktok_to_facebook.py", line 227, in process_product
+    post = self.graph.request(f"{self.fb_page_id}/feed", method="POST", post_args=post_args)
+  File "C:\Users\DELL\AppData\Local\Programs\Python\Python310\lib\site-packages\facebook\__init__.py", line 313, in request
+    raise GraphAPIError(result)
+facebook.GraphAPIError: (#100) param attached_media must be an array.
+2025-06-24 10:43:26,089 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 11:00:00 PDT. The current time is Monday, 23-Jun-25 20:43:25 PDT.
+2025-06-24 10:43:28,528 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 11:00:00 PDT. The current time is Monday, 23-Jun-25 20:43:27 PDT.
+2025-06-24 10:43:30,817 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 11:00:00 PDT. The current time is Monday, 23-Jun-25 20:43:29 PDT.
+2025-06-24 10:43:30,817 - ERROR - Failed to post product 685a1edb490d6496ccf86f2e: RetryError[<Future at 0x22c66541fc0 state=finished raised Exception>]
+2025-06-24 10:49:45,723 - ERROR - Failed to post product 685a205379c2353a91940686: An unknown error has occurred.
+2025-06-24 14:11:21,120 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 22:00:00 PDT. The current time is Tuesday, 24-Jun-25 00:11:19 PDT.
+2025-06-24 14:11:23,550 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 22:00:00 PDT. The current time is Tuesday, 24-Jun-25 00:11:22 PDT.
+2025-06-24 14:11:26,206 - WARNING - Image upload failed: Error validating access token: Session has expired on Monday, 23-Jun-25 22:00:00 PDT. The current time is Tuesday, 24-Jun-25 00:11:24 PDT.
+2025-06-24 14:11:26,215 - ERROR - Failed to post product 685a4f95b63d720f372bccdb: RetryError[<Future at 0x28096201f60 state=finished raised Exception>]
+2025-06-24 21:57:44,098 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:42 PDT.
+2025-06-24 21:57:44,450 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:43 PDT.
+2025-06-24 21:57:46,954 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:45 PDT.
+2025-06-24 21:57:47,364 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:46 PDT.
+2025-06-24 21:57:49,758 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:48 PDT.
+2025-06-24 21:57:50,214 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:48 PDT.
+2025-06-24 21:57:50,214 - ERROR - Failed to post product 685abce4a694cff250fad216: RetryError[<Future at 0x220ad3c1f60 state=finished raised Exception>]
