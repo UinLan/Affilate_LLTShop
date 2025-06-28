@@ -3,10 +3,27 @@ import Product from '@/lib/models/Product';
 import connectDB from '@/lib/mongodb';
 import { IProduct } from '@/types/product';
 import { spawn } from 'child_process';
+import { convertToClientProduct } from '@/lib/converters';
 
-// Kết nối database
-// connectDB();
+export async function GET() {
+  try {
+    await connectDB();
+    
+    const products = await Product.find()
+      .sort({ createdAt: -1 })
+      .exec();
 
+    const clientProducts = products.map(convertToClientProduct);
+
+    return NextResponse.json(clientProducts);
+  } catch (error) {
+    const err = error as Error;
+    return NextResponse.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
+  }
+}
 export async function POST(request: Request) {
   try {
      await connectDB();

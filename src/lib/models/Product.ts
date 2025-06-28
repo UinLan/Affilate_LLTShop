@@ -1,5 +1,4 @@
-// lib/models/Product.ts
-import mongoose, { Schema, Document } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 import { IProduct, IPostingTemplate, IPostHistory } from '@/types/product';
 
 const PostingTemplateSchema = new Schema<IPostingTemplate>({
@@ -22,12 +21,20 @@ const PostHistorySchema = new Schema<IPostHistory>({
 const ProductSchema = new Schema<IProduct>({
   tiktokUrl: { type: String, required: true },
   productName: { type: String, required: true },
-  description: { type: String, required: false },
-  price: { type: Number, required: false },
+  description: String,
+  price: Number,
   images: { type: [String], required: true },
   postingTemplates: { type: [PostingTemplateSchema], default: [] },
   postedHistory: { type: [PostHistorySchema], default: [] },
-  createdAt: { type: Date, default: Date.now }
+  categories: [{ 
+    type: Schema.Types.ObjectId, 
+    ref: 'Category' 
+  }],
+}, { 
+  timestamps: { 
+    createdAt: 'createdAt',
+    updatedAt: 'updatedAt'
+  } 
 });
 
-export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema);
+export default models.Product || model<IProduct>('Product', ProductSchema);
