@@ -1,5 +1,12 @@
 import { Types, Document } from 'mongoose';
 
+export interface IProductForm {
+  tiktokUrl: string;
+  productName: string;
+  images: string[];
+  postingTemplates?: IPostingTemplate[];
+}
+
 export interface IPostingTemplate {
   name: string;
   content: string;
@@ -17,11 +24,24 @@ export interface IPostHistory {
   };
 }
 
-export interface ICategory {
+export interface ICategory extends Document {
   _id: Types.ObjectId;
   name: string;
   slug: string;
   description?: string;
+  image?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+export interface ICategoryClient {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface IProduct extends Document {
@@ -36,13 +56,6 @@ export interface IProduct extends Document {
   categories?: Types.ObjectId[] | ICategory[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface ICategoryClient {
-  _id: string;
-  name: string;
-  slug: string;
-  description?: string;
 }
 
 export interface IProductClient {
@@ -69,5 +82,5 @@ export interface IProductClient {
 }
 
 export function isICategory(obj: any): obj is ICategory {
-  return obj && typeof obj === 'object' && '_id' in obj && 'name' in obj;
+  return obj && typeof obj === 'object' && '_id' in obj;
 }

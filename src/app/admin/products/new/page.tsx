@@ -2,16 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { IProduct } from '@/types/product';
-
+import { IProduct, IProductForm } from '@/types/product';
 export default function NewProductPage() {
   const router = useRouter();
-  const [form, setForm] = useState<Omit<IProduct, 'postedHistory' | 'createdAt' | 'description' | 'price'>>({
-    tiktokUrl: '',
-    productName: '',
-    images: [],
-    postingTemplates: []
-  });
+  const [form, setForm] = useState<IProductForm>({
+  tiktokUrl: '',
+  productName: '',
+  images: [],
+  postingTemplates: []
+});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,7 +29,7 @@ export default function NewProductPage() {
       if (!response.ok) throw new Error(await response.text());
 
       const data = await response.json();
-      router.push(`/products/${data.product._id}`);
+      router.push(`/admin/products/${data.product._id}`);
     } catch (err: any) {
       setError(err.message || 'Có lỗi xảy ra');
     } finally {

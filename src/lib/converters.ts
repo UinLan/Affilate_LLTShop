@@ -1,27 +1,30 @@
 import { Document, Types } from 'mongoose';
 import { 
   IProduct, 
-  IProductClient, 
-  ICategoryClient,
+  IProductClient,
   ICategory,
-  isICategory 
+  ICategoryClient
 } from '@/types/product';
 
-export function convertToClientProduct(product: IProduct & Document): IProductClient {
-  // Xử lý categories với type safety
-  const processCategories = (
-    categories?: (Types.ObjectId | ICategory)[]
-  ): ICategoryClient[] | undefined => {
-    if (!categories) return undefined;
+export function convertToClientCategory(category: ICategory): ICategoryClient {
+  return {
+    _id: category._id.toString(),
+    name: category.name,
+    slug: category.slug,
+    description: category.description,
+    image: category.image,
+    createdAt: category.createdAt?.toISOString(),
+    updatedAt: category.updatedAt?.toISOString()
+  };
+}
 
+export function convertToClientProduct(product: IProduct & Document): IProductClient {
+  const processCategories = (categories?: (Types.ObjectId | ICategory)[]): ICategoryClient[] | undefined => {
+    if (!categories) return undefined;
+    
     return categories.map(cat => {
       if (isICategory(cat)) {
-        return {
-          _id: cat._id.toString(),
-          name: cat.name,
-          slug: cat.slug,
-          description: cat.description
-        };
+        return convertToClientCategory(cat);
       }
       return {
         _id: cat.toString(),
@@ -50,4 +53,8 @@ export function convertToClientProduct(product: IProduct & Document): IProductCl
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt?.toISOString() || product.createdAt.toISOString()
   };
+}
+
+function isICategory(obj: any): obj is ICategory {
+  return obj && typeof obj === 'object' && '_id' in obj && obj._id instanceof Types.ObjectId;
 }

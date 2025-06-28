@@ -1,4 +1,4 @@
-'use client'; // Thêm directive này ở đầu file
+'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -14,7 +14,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     isValidImageUrl(product.images[0]) ? product.images[0] : '/placeholder-image.jpg'
   );
 
-  // Kiểm tra URL hình ảnh hợp lệ
   function isValidImageUrl(url: string) {
     try {
       new URL(url);
@@ -46,6 +45,18 @@ export default function ProductCard({ product }: ProductCardProps) {
                 currency: 'VND'
               }).format(product.price)}
             </p>
+          )}
+          {product.categories && product.categories.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {product.categories.map(category => (
+                <span 
+                  key={category._id} 
+                  className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded"
+                >
+                  {category.name}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </Link>
