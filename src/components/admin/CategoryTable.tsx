@@ -1,4 +1,3 @@
-// components/admin/CategoryTable.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -29,30 +28,36 @@ export default function CategoryTable() {
   });
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch categories and products
+  const fetchCategories = async () => {
+    try {
+      const res = await fetch('/api/categories');
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      const data = await res.json();
+      setCategories(data.data || data);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/products?populate=categories');
+      if (!res.ok) throw new Error('Failed to fetch products');
+      const data = await res.json();
+      setAllProducts(data.data || data);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        setLoading({ categories: true, products: true });
-        setError(null);
-
-        // Fetch categories
-        const categoriesRes = await fetch('/api/categories');
-        if (!categoriesRes.ok) throw new Error('Failed to fetch categories');
-        const categoriesData = await categoriesRes.json();
-        setCategories(categoriesData.data || categoriesData);
-
-        // Fetch products
-        const productsRes = await fetch('/api/products?populate=categories');
-        if (!productsRes.ok) throw new Error('Failed to fetch products');
-        const productsData = await productsRes.json();
-        setAllProducts(productsData.data || productsData);
-
-        setLoading({ categories: false, products: false });
-      } catch (err) {
-        setError((err as Error).message);
-        setLoading({ categories: false, products: false });
-      }
+      setLoading({ categories: true, products: true });
+      setError(null);
+      
+      await Promise.all([fetchCategories(), fetchProducts()]);
+      
+      setLoading({ categories: false, products: false });
     };
 
     fetchData();
@@ -76,20 +81,8 @@ export default function CategoryTable() {
         throw new Error(errorData.error || 'Failed to update product categories');
       }
 
-      // Update local state to reflect changes
-      setAllProducts(prevProducts => 
-        prevProducts.map(product => {
-          if (product._id === productId) {
-            return {
-              ...product,
-              categories: assign
-                ? [...(product.categories || []), selectedCategory]
-                : product.categories?.filter(id => id !== selectedCategory) || []
-            };
-          }
-          return product;
-        })
-      );
+      // Refresh data after successful update
+      await fetchProducts();
     } catch (err) {
       setError((err as Error).message);
     }
@@ -103,14 +96,8 @@ export default function CategoryTable() {
         });
         
         if (res.ok) {
-          setCategories(categories.filter(c => c._id !== categoryId));
-          // Also remove from all products
-          setAllProducts(prevProducts => 
-            prevProducts.map(product => ({
-              ...product,
-              categories: product.categories?.filter(id => id !== categoryId) || []
-            }))
-          );
+          await fetchCategories();
+          await fetchProducts();
         }
       } catch (err) {
         setError((err as Error).message);
