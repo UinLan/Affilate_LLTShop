@@ -2,17 +2,18 @@
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
+import { convertToClientProduct } from '@/lib/converters';
 
 export async function PUT(
   request: Request,
   { params }: { params: { productId: string } }
 ) {
-  await connectDB();
-  
-  const { categoryId, action } = await request.json();
-  const { productId } = params;
-
   try {
+    await connectDB();
+    
+    const { categoryId, action } = await request.json();
+    const { productId } = params;
+
     const product = await Product.findById(productId);
     if (!product) {
       return NextResponse.json(
@@ -22,6 +23,7 @@ export async function PUT(
     }
 
     if (action === 'add') {
+      // Thêm danh mục mới và đảm bảo không trùng lặp
       if (!product.categories.includes(categoryId)) {
         product.categories.push(categoryId);
       }
@@ -29,14 +31,27 @@ export async function PUT(
       product.categories = product.categories.filter(
         (id: string) => id.toString() !== categoryId
       );
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Invalid action' },
+        { status: 400 }
+      );
     }
 
     await product.save();
-    return NextResponse.json({ success: true, product });
+    
+    const populatedProduct = await Product.findById(productId).populate('categories');
+    const clientProduct = convertToClientProduct(populatedProduct);
+    
+    return NextResponse.json({ 
+      success: true, 
+      data: clientProduct 
+    });
   } catch (error) {
-  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-  return NextResponse.json(
-    { success: false, error: errorMessage }, // Đảm bảo luôn có cấu trúc {success, error}
-    { status: 500 }
-  );
-}}
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
+  }
+}
