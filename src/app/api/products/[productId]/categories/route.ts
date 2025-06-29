@@ -12,7 +12,7 @@ export async function PUT(
     await connectDB();
     
     const { categoryId, action } = await request.json();
-    const productId = params.productId; // Sửa lại cách lấy productId
+    const productId = params.productId;
 
     // Validate category exists
     const category = await Category.findById(categoryId);
@@ -23,39 +23,30 @@ export async function PUT(
       );
     }
 
-    const product = await Product.findById(productId);
-    if (!product) {
+    // Sử dụng atomic operations để đảm bảo tính nhất quán
+    let updateOperation;
+    if (action === 'add') {
+      updateOperation = { $addToSet: { categories: categoryId } };
+    } else {
+      updateOperation = { $pull: { categories: categoryId } };
+    }
+
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      updateOperation,
+      { new: true }
+    ).populate('categories');
+
+    if (!updatedProduct) {
       return NextResponse.json(
         { success: false, error: 'Sản phẩm không tồn tại' },
         { status: 404 }
       );
     }
 
-    if (action === 'add') {
-      // Ensure category is not already assigned
-      if (!product.categories.includes(categoryId)) {
-        product.categories.push(categoryId);
-      }
-    } else if (action === 'remove') {
-      product.categories = product.categories.filter(
-        (id: string) => id.toString() !== categoryId
-      );
-    } else {
-      return NextResponse.json(
-        { success: false, error: 'Hành động không hợp lệ' },
-        { status: 400 }
-      );
-    }
-
-    await product.save();
-    
-    // Populate categories for the response
-    const populatedProduct = await Product.findById(productId).populate('categories');
-    const clientProduct = convertToClientProduct(populatedProduct);
-    
     return NextResponse.json({ 
       success: true, 
-      data: clientProduct 
+      data: convertToClientProduct(updatedProduct) 
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';

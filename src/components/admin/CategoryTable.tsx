@@ -28,38 +28,36 @@ export default function CategoryTable() {
   });
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = async () => {
+  const fetchData = async () => {
+    setLoading({ categories: true, products: true });
+    setError(null);
+    
     try {
-      const res = await fetch('/api/categories');
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      const data = await res.json();
-      setCategories(data.data || data);
-    } catch (err) {
-      setError((err as Error).message);
-    }
-  };
+      // Fetch song song categories và products với populate
+      const [categoriesRes, productsRes] = await Promise.all([
+        fetch('/api/categories'),
+        fetch('/api/products?populate=categories')
+      ]);
 
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch('/api/products?populate=categories');
-      if (!res.ok) throw new Error('Failed to fetch products');
-      const data = await res.json();
-      setAllProducts(data.data || data);
+      if (!categoriesRes.ok || !productsRes.ok) {
+        throw new Error('Failed to fetch data');
+      }
+
+      const [categoriesData, productsData] = await Promise.all([
+        categoriesRes.json(),
+        productsRes.json()
+      ]);
+
+      setCategories(categoriesData.data || categoriesData);
+      setAllProducts(productsData.data || productsData);
     } catch (err) {
       setError((err as Error).message);
+    } finally {
+      setLoading({ categories: false, products: false });
     }
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading({ categories: true, products: true });
-      setError(null);
-      
-      await Promise.all([fetchCategories(), fetchProducts()]);
-      
-      setLoading({ categories: false, products: false });
-    };
-
     fetchData();
   }, []);
 
@@ -81,8 +79,22 @@ export default function CategoryTable() {
         throw new Error(errorData.error || 'Failed to update product categories');
       }
 
-      // Refresh data after successful update
-      await fetchProducts();
+      // Cập nhật UI ngay lập tức
+      setAllProducts(prevProducts => 
+        prevProducts.map(product => {
+          if (product._id === productId) {
+            const updatedCategories = assign
+              ? [...(product.categories || []), selectedCategory]
+              : product.categories?.filter(id => id !== selectedCategory) || [];
+            
+            return {
+              ...product,
+              categories: updatedCategories
+            };
+          }
+          return product;
+        })
+      );
     } catch (err) {
       setError((err as Error).message);
     }
@@ -96,8 +108,7 @@ export default function CategoryTable() {
         });
         
         if (res.ok) {
-          await fetchCategories();
-          await fetchProducts();
+          await fetchData();
         }
       } catch (err) {
         setError((err as Error).message);

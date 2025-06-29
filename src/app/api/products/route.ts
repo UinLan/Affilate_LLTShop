@@ -19,13 +19,15 @@ export async function GET(request: Request) {
     if (categorySlug) {
       // Tìm category theo slug trước
       const category = await Category.findOne({ slug: categorySlug });
-      if (!category) {
-        return NextResponse.json(
-          { success: true, data: [] },
-          { status: 200 }
-        );
+      if (category) {
+        query = query.where('categories').in([category._id]);
+      } else {
+        // Nếu không tìm thấy category, trả về mảng rỗng
+        return NextResponse.json({ 
+          success: true, 
+          data: [] 
+        }, { status: 200 });
       }
-      query = query.where('categories').in([category._id]);
     }
 
     if (populate === 'categories') {
