@@ -31,8 +31,11 @@ export async function GET(request: Request) {
     }
 
     if (populate === 'categories') {
-      query = query.populate('categories');
-    }
+  query = query.populate({
+    path: 'categories',
+    select: '_id name slug' // Chỉ lấy các trường cần thiết
+  });
+}
 
     const products = await query.exec();
     const clientProducts = products.map(convertToClientProduct);

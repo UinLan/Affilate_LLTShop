@@ -23,21 +23,23 @@ export async function PUT(
       );
     }
 
-    // Sử dụng atomic operations để đảm bảo tính nhất quán
-    let updateOperation;
+    // Find the product and update in one operation
+    let product;
     if (action === 'add') {
-      updateOperation = { $addToSet: { categories: categoryId } };
-    } else {
-      updateOperation = { $pull: { categories: categoryId } };
+      product = await Product.findByIdAndUpdate(
+        productId,
+        { $addToSet: { categories: categoryId } }, // Sử dụng $addToSet để tránh trùng lặp
+        { new: true, populate: 'categories' }
+      );
+    } else if (action === 'remove') {
+      product = await Product.findByIdAndUpdate(
+        productId,
+        { $pull: { categories: categoryId } },
+        { new: true, populate: 'categories' }
+      );
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
-      updateOperation,
-      { new: true }
-    ).populate('categories');
-
-    if (!updatedProduct) {
+    if (!product) {
       return NextResponse.json(
         { success: false, error: 'Sản phẩm không tồn tại' },
         { status: 404 }
@@ -46,7 +48,7 @@ export async function PUT(
 
     return NextResponse.json({ 
       success: true, 
-      data: convertToClientProduct(updatedProduct) 
+      data: convertToClientProduct(product) 
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Lỗi không xác định';
