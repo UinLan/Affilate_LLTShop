@@ -1,6 +1,8 @@
+// app/api/categories/route.ts
 import { NextResponse } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Category from '@/lib/models/Category';
+import Product from '@/lib/models/Product'; 
 
 export async function GET() {
   try {
@@ -45,8 +47,46 @@ export async function POST(request: Request) {
     await category.save();
     
     return NextResponse.json(
-      { success: true, category },
+      { success: true, data: category },
       { status: 201 }
+    );
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    await connectDB();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID danh mục là bắt buộc' },
+        { status: 400 }
+      );
+    }
+
+    const deletedCategory = await Category.findByIdAndDelete(id);
+    if (!deletedCategory) {
+      return NextResponse.json(
+        { success: false, error: 'Danh mục không tồn tại' },
+        { status: 404 }
+      );
+    }
+
+    // Xóa danh mục khỏi tất cả sản phẩm
+    await Product.updateMany(
+      { categories: id },
+      { $pull: { categories: id } }
+    );
+
+    return NextResponse.json(
+      { success: true, data: deletedCategory }
     );
   } catch (error: any) {
     return NextResponse.json(

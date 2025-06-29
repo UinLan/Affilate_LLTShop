@@ -1,26 +1,40 @@
 // components/admin/ProductTable.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { FiEdit, FiTrash2 } from 'react-icons/fi';
-import { IProduct } from '@/types/product';
+import { useRouter } from 'next/navigation';
+import { IProductClient } from '@/types/product';
 
 export default function ProductTable() {
-  const [products, setProducts] = useState<IProduct[]>([]);
+  const router = useRouter();
+  const [products, setProducts] = useState<IProductClient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch('/api/products');
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        setProducts(data);
+        setLoading(true);
+        const response = await fetch('/api/products');
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        // Đảm bảo products luôn là mảng
+        const productsData = Array.isArray(result.data) 
+          ? result.data 
+          : Array.isArray(result) 
+            ? result 
+            : [];
+            
+        setProducts(productsData);
       } catch (err) {
-        setError((err as Error).message);
+        console.error('Error fetching products:', err);
+        setError(err instanceof Error ? err.message : 'Lỗi không xác định');
       } finally {
         setLoading(false);
       }
@@ -29,84 +43,72 @@ export default function ProductTable() {
     fetchProducts();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return;
-    
-    try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!res.ok) throw new Error('Failed to delete product');
-      
-      setProducts(products.filter(product => product._id?.toString() !== id));
-    } catch (err) {
-      setError((err as Error).message);
+  const handleDelete = async (productId: string) => {
+    if (confirm('Bạn có chắc muốn xóa sản phẩm này?')) {
+      try {
+        const response = await fetch(`/api/products/${productId}`, {
+          method: 'DELETE'
+        });
+        
+        if (response.ok) {
+          setProducts(products.filter(p => p._id !== productId));
+        }
+      } catch (err) {
+        console.error('Error deleting product:', err);
+      }
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">Error: {error}</div>;
+  if (loading) {
+    return <div className="p-4 text-center">Đang tải sản phẩm...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">Lỗi: {error}</div>;
+  }
+
+  if (!Array.isArray(products) || products.length === 0) {
+    return <div className="p-4 text-center">Không có sản phẩm nào</div>;
+  }
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white">
-        <thead>
-          <tr>
-            <th className="py-3 px-4 border-b text-left">Tên sản phẩm</th>
-            <th className="py-3 px-4 border-b text-left">Giá</th>
-            <th className="py-3 px-4 border-b text-left">Hình ảnh</th>
-            <th className="py-3 px-4 border-b text-left">Actions</th>
+    <table className="min-w-full bg-white border rounded-lg overflow-hidden">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="py-3 px-4 border-b text-left">Tên sản phẩm</th>
+          <th className="py-3 px-4 border-b text-left">Giá</th>
+          <th className="py-3 px-4 border-b text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {products.map((product) => (
+          <tr 
+            key={product._id} 
+            className="hover:bg-gray-50 border-b"
+          >
+            <td className="py-3 px-4">{product.productName}</td>
+            <td className="py-3 px-4">{product.price}</td>
+            <td className="py-3 px-4">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => router.push(`/admin/products/edit/${product._id}`)}
+                  className="text-blue-500 hover:text-blue-700 p-1 rounded hover:bg-blue-50"
+                  title="Chỉnh sửa"
+                >
+                  <FiEdit size={18} />
+                </button>
+                <button
+                  onClick={() => handleDelete(product._id)}
+                  className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50"
+                  title="Xóa"
+                >
+                  <FiTrash2 size={18} />
+                </button>
+              </div>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          {products.map((product) => (
-            <tr 
-              key={product._id?.toString()} 
-              className="hover:bg-gray-50"
-            >
-              <td className="py-3 px-4 border-b">{product.productName}</td>
-              <td className="py-3 px-4 border-b">
-                {product.price ? (
-                  new Intl.NumberFormat('vi-VN', {
-                    style: 'currency',
-                    currency: 'VND'
-                  }).format(product.price)
-                ) : (
-                  'N/A'
-                )}
-              </td>
-              <td className="py-3 px-4 border-b">
-                {product.images?.length > 0 ? (
-                  <img 
-                    src={product.images[0]} 
-                    alt={product.productName}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                ) : (
-                  'No image'
-                )}
-              </td>
-              <td className="py-3 px-4 border-b">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => router.push(`/admin/products/edit/${product._id?.toString()}`)}
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    <FiEdit size={18} />
-                  </button>
-                  <button
-                    onClick={() => product._id && handleDelete(product._id.toString())}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    <FiTrash2 size={18} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+        ))}
+      </tbody>
+    </table>
   );
 }
