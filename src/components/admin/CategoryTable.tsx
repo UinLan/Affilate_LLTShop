@@ -252,7 +252,13 @@ const getPendingProducts = (type: 'add' | 'remove') => {
                   >
                     <td className="py-3 px-4">{category.name}</td>
                     <td className="py-3 px-4 text-gray-600">{category.slug}</td>
-                    <td className="py-3 px-4">{productCount}</td>
+                    <td className="py-3 px-4">
+  {allProducts.filter(p => 
+    p.categories?.some(c => 
+      (typeof c === 'string' ? c : c._id) === category._id
+    )
+  ).length}
+</td>
                     <td className="py-3 px-4">
                       <div className="flex space-x-2">
                         <button
