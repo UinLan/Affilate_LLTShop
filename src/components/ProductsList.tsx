@@ -1,10 +1,15 @@
+// ProductList.tsx
 'use client';
 
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ProductCard from './ProductCard';
 
-export default function ProductList() {
+interface ProductListProps {
+  searchTerm: string;
+}
+
+export default function ProductList({ searchTerm }: ProductListProps) {
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
   const [products, setProducts] = useState<any[]>([]);
@@ -16,14 +21,19 @@ export default function ProductList() {
       try {
         setLoading(true);
         setError(null);
-        
-        const url = category 
+
+        let url = category 
           ? `/api/products?category=${category}&populate=categories`
           : '/api/products?populate=categories';
-          
+
+        // Nếu có searchTerm, thêm nó vào URL
+        if (searchTerm) {
+          url += `&search=${encodeURIComponent(searchTerm)}`;
+        }
+
         const res = await fetch(url);
         if (!res.ok) throw new Error('Failed to fetch products');
-        
+
         const data = await res.json();
         setProducts(data.data || data);
       } catch (err) {
@@ -34,7 +44,7 @@ export default function ProductList() {
     };
 
     fetchProducts();
-  }, [category]);
+  }, [category, searchTerm]);
 
   if (loading) return <div className="text-center py-8">Đang tải sản phẩm...</div>;
   if (error) return <div className="text-red-500 py-8">Lỗi: {error}</div>;

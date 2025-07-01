@@ -6,6 +6,59 @@ import { spawn } from 'child_process';
 import { convertToClientProduct } from '@/lib/converters';
 import Category from '@/lib/models/Category';
 
+// export async function GET(request: Request) {
+//   try {
+//     await connectDB();
+    
+//     const { searchParams } = new URL(request.url);
+//     const populate = searchParams.get('populate');
+//     const categorySlug = searchParams.get('category');
+    
+//     let query = Product.find().sort({ createdAt: -1 });
+
+//     if (categorySlug) {
+//       // Tìm category theo slug trước
+//       const category = await Category.findOne({ slug: categorySlug });
+//       if (category) {
+//         query = query.where('categories').in([category._id]);
+//       } else {
+//         // Nếu không tìm thấy category, trả về mảng rỗng
+//         return NextResponse.json({ 
+//           success: true, 
+//           data: [] 
+//         }, { status: 200 });
+//       }
+//     }
+
+//     if (populate === 'categories') {
+//   query = query.populate({
+//     path: 'categories',
+//     select: '_id name slug' // Chỉ lấy các trường cần thiết
+//   });
+// }
+
+//     const products = await query.exec();
+//     const clientProducts = products.map(convertToClientProduct);
+
+//     return NextResponse.json({ 
+//       success: true, 
+//       data: clientProducts 
+//     }, { status: 200 });
+    
+//   } catch (error) {
+//     const err = error as Error;
+//     console.error('API Error:', err);
+//     return NextResponse.json(
+//       { 
+//         success: false, 
+//         error: err.message,
+//         data: [] 
+//       }, 
+//       { status: 500 }
+//     );
+//   }
+// }
+
 export async function GET(request: Request) {
   try {
     await connectDB();
@@ -13,47 +66,46 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate');
     const categorySlug = searchParams.get('category');
-    
-    let query = Product.find().sort({ createdAt: -1 });
+    const searchTerm = searchParams.get('search')?.trim();
 
+    let mongoQuery: any = {};
+
+    // Nếu có category
     if (categorySlug) {
-      // Tìm category theo slug trước
       const category = await Category.findOne({ slug: categorySlug });
       if (category) {
-        query = query.where('categories').in([category._id]);
+        mongoQuery.categories = category._id;
       } else {
-        // Nếu không tìm thấy category, trả về mảng rỗng
-        return NextResponse.json({ 
-          success: true, 
-          data: [] 
-        }, { status: 200 });
+        return NextResponse.json({ success: true, data: [] }, { status: 200 });
       }
     }
 
-    if (populate === 'categories') {
-  query = query.populate({
-    path: 'categories',
-    select: '_id name slug' // Chỉ lấy các trường cần thiết
-  });
+    // Nếu có từ khóa tìm kiếm
+   if (searchTerm) {
+  mongoQuery.$or = [
+    { productName: { $regex: searchTerm, $options: 'i' } },
+    { description: { $regex: searchTerm, $options: 'i' } }
+  ];
 }
+
+    let query = Product.find(mongoQuery).sort({ createdAt: -1 });
+
+    if (populate === 'categories') {
+      query = query.populate({
+        path: 'categories',
+        select: '_id name slug'
+      });
+    }
 
     const products = await query.exec();
     const clientProducts = products.map(convertToClientProduct);
 
-    return NextResponse.json({ 
-      success: true, 
-      data: clientProducts 
-    }, { status: 200 });
-    
+    return NextResponse.json({ success: true, data: clientProducts }, { status: 200 });
   } catch (error) {
     const err = error as Error;
     console.error('API Error:', err);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: err.message,
-        data: [] 
-      }, 
+      { success: false, error: err.message, data: [] },
       { status: 500 }
     );
   }
