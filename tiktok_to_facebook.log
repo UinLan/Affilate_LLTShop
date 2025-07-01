@@ -89,3 +89,4 @@ facebook.GraphAPIError: (#100) param attached_media must be an array.
 2025-06-24 21:57:49,758 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:48 PDT.
 2025-06-24 21:57:50,214 - WARNING - Image upload failed: Error validating access token: Session has expired on Tuesday, 24-Jun-25 02:00:00 PDT. The current time is Tuesday, 24-Jun-25 07:57:48 PDT.
 2025-06-24 21:57:50,214 - ERROR - Failed to post product 685abce4a694cff250fad216: RetryError[<Future at 0x220ad3c1f60 state=finished raised Exception>]
+2025-06-29 13:39:35,301 - WARNING - Image upload failed: HTTPSConnectionPool(host='p16-oec-sg.ibyteimg.com', port=443): Read timed out. (read timeout=10)

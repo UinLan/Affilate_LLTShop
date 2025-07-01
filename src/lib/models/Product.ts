@@ -2,7 +2,11 @@ import { Schema, model, models } from 'mongoose';
 import { IProduct, IPostingTemplate, IPostHistory } from '@/types/product';
 
 const PostingTemplateSchema = new Schema<IPostingTemplate>({
-  name: { type: String, required: true },
+    name: {
+    type: String,
+    required: true,
+    trim: true
+  },
   content: { type: String, required: true },
   imageLayout: { type: String, enum: ['single', 'carousel', 'collage'], required: true }
 });
