@@ -75,8 +75,8 @@ export default function ProductTable() {
     <table className="min-w-full bg-white border rounded-lg overflow-hidden">
       <thead className="bg-gray-100">
         <tr>
+          <th className="py-3 px-4 border-b text-left">Ảnh</th>
           <th className="py-3 px-4 border-b text-left">Tên sản phẩm</th>
-          <th className="py-3 px-4 border-b text-left">Giá</th>
           <th className="py-3 px-4 border-b text-left">Actions</th>
         </tr>
       </thead>
@@ -86,8 +86,20 @@ export default function ProductTable() {
             key={product._id} 
             className="hover:bg-gray-50 border-b"
           >
+             <td className="py-3 px-4">
+              {product.images && product.images.length > 0 ? (
+                <img
+                  src={product.images[0]}
+                  alt={product.productName}
+                  className="w-16 h-16 object-cover rounded border"
+                />
+              ) : (
+                <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 text-sm border rounded">
+                  Không có ảnh
+                </div>
+              )}
+            </td>
             <td className="py-3 px-4">{product.productName}</td>
-            <td className="py-3 px-4">{product.price}</td>
             <td className="py-3 px-4">
               <div className="flex space-x-2">
                 <button

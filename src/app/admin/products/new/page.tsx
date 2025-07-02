@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { IProduct, IProductForm } from '@/types/product';
+import { IProductForm } from '@/types/product';
+
 export default function NewProductPage() {
   const router = useRouter();
   const [form, setForm] = useState<IProductForm>({
-  tiktokUrl: '',
-  productName: '',
-  images: [],
-  postingTemplates: []
-});
+    shopeeUrl: '',
+    productName: '',
+    images: [],
+    postingTemplates: [],
+  });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -23,7 +25,7 @@ export default function NewProductPage() {
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form)
+        body: JSON.stringify(form),
       });
 
       if (!response.ok) throw new Error(await response.text());
@@ -38,7 +40,13 @@ export default function NewProductPage() {
   };
 
   const handleAddImage = () => {
-    setForm(prev => ({ ...prev, images: [...prev.images, ''] }));
+    if (form.images.length >= 4) return;
+    setForm((prev) => ({ ...prev, images: [...prev.images, ''] }));
+  };
+
+  const handleRemoveImage = (index: number) => {
+    const newImages = form.images.filter((_, i) => i !== index);
+    setForm({ ...form, images: newImages });
   };
 
   return (
@@ -54,13 +62,13 @@ export default function NewProductPage() {
       <form onSubmit={handleSubmit} className="space-y-8 bg-white p-6 rounded-xl shadow-md">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Link TikTok Affiliate</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Link shopee Affiliate</label>
             <input
               type="url"
-              value={form.tiktokUrl}
-              onChange={(e) => setForm({ ...form, tiktokUrl: e.target.value })}
+              value={form.shopeeUrl}
+              onChange={(e) => setForm({ ...form, shopeeUrl: e.target.value })}
               className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
-              placeholder="https://www.tiktok.com/..."
+              placeholder="https://s.shopee.vn/..."
               required
             />
           </div>
@@ -79,30 +87,41 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Hình ảnh</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Hình ảnh (tối đa 4)</label>
           <div className="space-y-3">
             {form.images.map((img, index) => (
-              <input
-                key={index}
-                type="url"
-                value={img}
-                onChange={(e) => {
-                  const newImages = [...form.images];
-                  newImages[index] = e.target.value;
-                  setForm({ ...form, images: newImages });
-                }}
-                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
-                placeholder="URL hình ảnh"
-                required
-              />
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="url"
+                  value={img}
+                  onChange={(e) => {
+                    const newImages = [...form.images];
+                    newImages[index] = e.target.value;
+                    setForm({ ...form, images: newImages });
+                  }}
+                  className="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2"
+                  placeholder="URL hình ảnh"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(index)}
+                  className="text-red-500 hover:text-red-700 text-sm font-medium"
+                >
+                  🗑 Xóa
+                </button>
+              </div>
             ))}
-            <button
-              type="button"
-              onClick={handleAddImage}
-              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium underline"
-            >
-              + Thêm hình ảnh
-            </button>
+
+            {form.images.length < 4 && (
+              <button
+                type="button"
+                onClick={handleAddImage}
+                className="text-indigo-600 hover:text-indigo-800 text-sm font-medium underline"
+              >
+                + Thêm hình ảnh
+              </button>
+            )}
           </div>
         </div>
 
