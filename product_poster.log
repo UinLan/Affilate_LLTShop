@@ -1,0 +1,236 @@
+import os
+import sys
+import io
+import time
+import random
+import argparse
+import logging
+import requests
+from pymongo import MongoClient
+import facebook
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from bson import ObjectId
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import json
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('product_poster.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+class ContentGenerator:
+    def __init__(self):
+        self._load_content_templates()
+        self._init_emoji_patterns()
+
+    def _load_content_templates(self):
+        self.templates = [
+            "🌟 {productName} - Sản phẩm chất lượng cao!\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "🔥 {productName} - Lựa chọn hoàn hảo cho bạn!\n{emoji}\n{hashtags}\n\nMua ngay: {affiliateLink}",
+            "📢 Đừng bỏ lỡ: {productName} {emoji}\n{hashtags}\n\n{affiliateLink}",
+            "🎯 {productName} - Giải pháp tuyệt vời cho nhu cầu của bạn\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "🚨 {productName} - Sản phẩm được yêu thích!\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Bạn đã thử {productName} chưa? {emoji}\n{hashtags}\n\n{affiliateLink}",
+            "{productName} - Trải nghiệm mới mẻ đang chờ bạn!\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Khám phá ngay {productName} - Sản phẩm đáng để thử!\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "{productName} - Lựa chọn thông minh cho cuộc sống hiện đại\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Đã đến lúc nâng cấp trải nghiệm với {productName} {emoji}\n{hashtags}\n\n{affiliateLink}",
+            "{productName} - Sản phẩm không thể thiếu trong đời sống hằng ngày\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Bạn sẽ ấn tượng với chất lượng của {productName} {emoji}\n{hashtags}\n\n{affiliateLink}",
+            "{productName} - Mang đến sự khác biệt rõ rệt\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Trải nghiệm tuyệt vời cùng {productName} {emoji}\n{hashtags}\n\n{affiliateLink}",
+            "{productName} - Sự kết hợp hoàn hảo giữa chất lượng và tiện ích\n{emoji}\n{hashtags}\n\n{affiliateLink}",
+            "Khám phá ngay {productName} - Sản phẩm đáng để sở hữu\n{emoji}\n{hashtags}\n\n{affiliateLink}"
+        ]
+        
+        self.hashtags = [
+            "#SanPhamHot #DealHot #UuDai",
+            "#MuaSamOnline #ShopOnline #HangChatLuong",
+            "#AffiliateMarketing #ReviewSanPham #KhuyenMai"
+        ]
+
+    def _init_emoji_patterns(self):
+        self.emoji_patterns = {
+            'excited': ["🔥", "✨", "🎉", "🚀"],
+            'happy': ["😍", "🥰", "😊", "👍"],
+            'shopping': ["🛍️", "🛒", "💰", "💳"],
+            'quality': ["⭐", "🏆", "💎", "👑"]
+        }
+
+    def generate_hashtags(self):
+        base_tags = ["SanPhamHot", "MuaSamOnline", "Affiliate"]
+        custom_tags = random.sample([
+            "DealHot", "HangChinhHang", "GiaTot", 
+            "KhuyenMai", "Review", "ShopOnline",
+            "ChatLuong", "UuDai", "HangMoi"
+        ], 3)
+        return " ".join(["#" + tag for tag in base_tags + custom_tags])
+
+    def generate_emoji_sequence(self):
+        mood = random.choice(list(self.emoji_patterns.keys()))
+        return " ".join(random.sample(self.emoji_patterns[mood], 2))
+
+    def generate_caption(self, product):
+        product_name = product.get("productName", "Sản phẩm chất lượng")
+        affiliate_link = product.get("affiliateLink", "")
+        
+        if not affiliate_link:
+            raise ValueError("Affiliate link is required for product posting")
+            
+        template = random.choice(self.templates)
+
+        variables = {
+            "productName": product_name,
+            "emoji": self.generate_emoji_sequence(),
+            "hashtags": self.generate_hashtags(),
+            "affiliateLink": affiliate_link
+        }
+
+        caption = template.format(**variables)
+        return caption
+
+class FacebookPoster:
+    def __init__(self):
+        load_dotenv()
+        self._validate_environment()
+        self._init_clients()
+        self.content_gen = ContentGenerator()
+
+    def _validate_environment(self):
+        required = ['MONGODB_URI', 'FACEBOOK_ACCESS_TOKEN', 'FACEBOOK_PAGE_ID']
+        missing = [k for k in required if not os.getenv(k)]
+        if missing:
+            raise EnvironmentError(f"Missing env vars: {', '.join(missing)}")
+
+    def _init_clients(self):
+        self.mongo_client = MongoClient(os.getenv("MONGODB_URI"))
+        db = self.mongo_client.get_database("auto_post")
+        self.products_col = db["products"]
+        self.post_history_col = db["post_history"]
+        self.graph = facebook.GraphAPI(access_token=os.getenv("FACEBOOK_ACCESS_TOKEN"), version="3.0")
+        self.fb_page_id = os.getenv("FACEBOOK_PAGE_ID")
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10), retry=retry_if_exception_type(Exception))
+    def _upload_images(self, image_urls):
+        uploaded = []
+        for url in image_urls[:4]:
+            try:
+                resp = requests.get(url, stream=True, timeout=10)
+                resp.raise_for_status()
+                res = self.graph.put_photo(
+                    image=resp.raw,
+                    album_path=f"{self.fb_page_id}/photos",
+                    published=False
+                )
+                uploaded.append({"media_fbid": res["id"]})
+            except Exception as e:
+                logging.warning(f"Image upload failed: {e}")
+        if not uploaded:
+            raise Exception("No images uploaded")
+        return uploaded
+
+    def process_product(self, product_id):
+        product = self.products_col.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            return False
+
+        try:
+            caption = self.content_gen.generate_caption(product)
+        except ValueError as e:
+            logging.error(f"Skipping product {product_id}: {str(e)}")
+            return False
+
+        images = product.get("images", [])
+        if not images:
+            return False
+
+        selected = random.sample(images, min(len(images), 4))
+        
+        try:
+            uploaded = self._upload_images(selected)
+            attached_media = [{"media_fbid": media["media_fbid"]} for media in uploaded]
+            
+            post_args = {
+                "message": caption,
+                "attached_media": json.dumps(attached_media),
+                "published": True
+            }
+
+            post = self.graph.request(
+                f"{self.fb_page_id}/feed",
+                method="POST",
+                post_args=post_args
+            )
+            
+            self.post_history_col.insert_one({
+                "productId": product["_id"],
+                "postId": post["id"],
+                "timestamp": datetime.utcnow(),
+                "caption": caption,
+                "imagesUsed": len(uploaded),
+                "affiliateLink": product.get("affiliateLink", "")
+            })
+            
+            self.products_col.update_one(
+                {"_id": product["_id"]},
+                {"$set": {"lastPosted": datetime.utcnow()}}
+            )
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to post product {product_id}: {str(e)}")
+            return False
+
+    def run_as_service(self):
+        while True:
+            try:
+                query = {
+                    "$or": [
+                        {"postedHistory": {"$exists": False}},
+                        {"lastPosted": {"$lt": datetime.utcnow() - timedelta(days=5)}}
+                    ],
+                    "images": {"$ne": [], "$exists": True},
+                    "affiliateLink": {"$exists": True, "$ne": ""}
+                }
+
+                products = list(self.products_col.find(query).limit(random.randint(1, 3)))
+                for p in products:
+                    success = self.process_product(str(p["_id"]))
+                    if success:
+                        time.sleep(random.randint(120, 300))
+                time.sleep(random.randint(1800, 3600))
+            except KeyboardInterrupt:
+                logging.info("Service stopped by user")
+                break
+            except Exception as e:
+                logging.error(f"Service error: {str(e)}")
+                time.sleep(600)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--product-id', help='Process one product by ID')
+    parser.add_argument('--test-content', action='store_true')
+    args = parser.parse_args()
+
+    bot = FacebookPoster()
+
+    if args.test_content:
+        sample = {
+            "productName": "Áo thun cổ tròn in hình",
+            "affiliateLink": "https://example.com/affiliate-link",
+            "images": ["https://example.com/image1.jpg"]
+        }
+        for i in range(5):
+            print(f"\nCaption {i+1}:\n{bot.content_gen.generate_caption(sample)}")
+    elif args.product_id:
+        bot.process_product(args.product_id)
+    else:
+        bot.run_as_service()

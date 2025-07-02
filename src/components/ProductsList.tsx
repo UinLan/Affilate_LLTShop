@@ -4,6 +4,8 @@
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ProductCard from './ProductCard';
+import { motion } from 'framer-motion';
+
 
 interface ProductListProps {
   searchTerm: string;
@@ -51,10 +53,22 @@ export default function ProductList({ searchTerm }: ProductListProps) {
   if (!products.length) return <div className="text-gray-500 py-8">Không tìm thấy sản phẩm</div>;
 
   return (
+    // <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    //   {products.map((product) => (
+    //     <ProductCard key={product._id} product={product} />
+    //   ))}
+    // </div>
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {products.map((product) => (
-        <ProductCard key={product._id} product={product} />
-      ))}
-    </div>
+  {products.map((product, index) => (
+    <motion.div
+      key={product._id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+    >
+      <ProductCard product={product} />
+    </motion.div>
+  ))}
+</div>
   );
 }

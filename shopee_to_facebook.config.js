@@ -1,8 +1,8 @@
 module.exports = {
   apps: [{
-    name: "tiktok-to-facebook",
+    name: "shopee_to_facebook",
     script: "python",
-    args: "C:/tiktok_to_facebook/tiktok_to_facebook.py",
+    args: "C:/shopee_to_facebook/shopee_to_facebook.py",
     interpreter: "",
     autorestart: true,
     watch: false,

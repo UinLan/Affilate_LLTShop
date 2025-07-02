@@ -1,7 +1,7 @@
 import { Types, Document } from 'mongoose';
 
 export interface IProductForm {
-  tiktokUrl: string;
+  shopeeUrl: string;
   productName: string;
   images: string[];
   postingTemplates?: IPostingTemplate[];
@@ -46,7 +46,7 @@ export interface ICategoryClient {
 
 export interface IProduct extends Document {
   _id: Types.ObjectId;
-  tiktokUrl: string;
+  shopeeUrl: string;
   productName: string;
   description?: string;
   price?: number;
@@ -60,7 +60,7 @@ export interface IProduct extends Document {
 
 export interface IProductClient {
   _id: string;
-  tiktokUrl: string;
+  shopeeUrl: string;
   productName: string;
   description?: string;
   price?: number;

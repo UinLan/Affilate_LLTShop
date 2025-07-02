@@ -24,8 +24,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-      <Link href={product.tiktokUrl} target="_blank" rel="noopener noreferrer">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200">
+      <Link href={product.shopeeUrl} target="_blank" rel="noopener noreferrer">
         <div className="relative aspect-square">
           <Image
             src={imageSrc}
