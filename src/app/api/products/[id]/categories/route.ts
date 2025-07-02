@@ -6,13 +6,13 @@ import { convertToClientProduct } from '@/lib/converters';
 
 export async function PUT(
   request: Request,
-  { params }: { params: { productId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
     await connectDB();
     
     const { categoryId, action } = await request.json();
-    const productId = params.productId;
+    const productId = params.id;
 
     // Validate category exists
     const category = await Category.findById(categoryId);

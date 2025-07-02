@@ -23,7 +23,7 @@ const PostHistorySchema = new Schema<IPostHistory>({
 });
 
 const ProductSchema = new Schema<IProduct>({
-  tiktokUrl: { type: String, required: true },
+  shopeeUrl: { type: String, required: true },
   productName: { type: String, required: true },
   description: String,
   price: Number,

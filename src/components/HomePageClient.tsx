@@ -14,7 +14,15 @@ export default function HomePageClient({ categories }: HomePageClientProps) {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">Sản phẩm nổi bật</h1>
+      <div className="text-center mb-4">
+  <h1 className="text-4xl md:text-5xl font-extrabold text-blue-700 drop-shadow-sm mb-4">
+    🔥 Sản phẩm nổi bật
+  </h1>
+  <p className="text-gray-600 max-w-xl mx-auto">
+    Khám phá những sản phẩm chất lượng, giá hợp lý, được chọn lọc từ Shopee.
+  </p>
+</div>
+
 
       <SearchBar onSearch={setSearchTerm} />
       <CategoryFilter categories={categories} />

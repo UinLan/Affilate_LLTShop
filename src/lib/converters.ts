@@ -105,7 +105,7 @@ export function convertToClientProduct(product: IProduct & Document): IProductCl
 
   return {
     _id: product._id.toString(),
-    tiktokUrl: product.tiktokUrl,
+    shopeeUrl: product.shopeeUrl,
     productName: product.productName,
     description: product.description || undefined,
     price: product.price || undefined,
@@ -127,7 +127,7 @@ export function convertToServerProduct(product: IProductClient): Partial<IProduc
 
   return {
     productName: product.productName,
-    tiktokUrl: product.tiktokUrl,
+    shopeeUrl: product.shopeeUrl,
     description: product.description,
     price: product.price,
     images: product.images,
