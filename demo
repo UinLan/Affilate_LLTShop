@@ -1,0 +1,229 @@
+import os
+import sys
+import io
+import time
+import random
+import argparse
+import logging
+import requests
+from pymongo import MongoClient
+import facebook
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from bson import ObjectId
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import json
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('shopee_to_facebook.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
+class ContentGenerator:
+    def __init__(self):
+        self._load_content_templates()
+        self._init_emoji_patterns()
+
+    def _load_content_templates(self):
+        self.templates = {
+            "captions": [
+                "🌟 {productName} - Sản phẩm đang làm mưa làm gió trên shopee!\n{emoji}\n{hashtags}",
+                "🔥 {productName} - Lựa chọn hoàn hảo cho bạn!\n{emoji}\n{hashtags}",
+                "📢 Đừng bỏ lỡ: {productName} {emoji}\n{hashtags}",
+                "🎯 {productName} - Giải pháp tuyệt vời cho nhu cầu của bạn\n{emoji}\n{hashtags}",
+                "🚨 {productName} - Sản phẩm được yêu thích hiện nay!\n{emoji}\n{hashtags}",
+                "Bạn đã khám phá {productName} chưa? {emoji}\n{hashtags}",
+                "{productName} - Trải nghiệm mới mẻ đang chờ bạn!\n{emoji}\n{hashtags}",
+                "Khám phá ngay {productName} - Sản phẩm đáng để thử!\n{emoji}\n{hashtags}",
+                "{productName} - Lựa chọn thông minh cho cuộc sống hiện đại\n{emoji}\n{hashtags}",
+                "Đã đến lúc nâng cấp trải nghiệm với {productName} {emoji}\n{hashtags}",
+                "{productName} - Sản phẩm không thể thiếu trong đời sống hằng ngày\n{emoji}\n{hashtags}",
+                "Bạn sẽ ấn tượng với chất lượng của {productName} {emoji}\n{hashtags}",
+                "{productName} - Mang đến sự khác biệt rõ rệt\n{emoji}\n{hashtags}",
+                "Trải nghiệm tuyệt vời cùng {productName} {emoji}\n{hashtags}",
+                "{productName} - Sự kết hợp hoàn hảo giữa chất lượng và tiện ích\n{emoji}\n{hashtags}",
+                "Khám phá ngay {productName} - Sản phẩm đáng để sở hữu\n{emoji}\n{hashtags}"
+            ],
+            "hashtags": [
+                "#shopeeShop #XuHuong #Trending",
+                "#SanPhamHot #DealHot #ShopTre",
+                "#MustHave #Top1 #BestSeller"
+            ]
+        }
+
+    def _init_emoji_patterns(self):
+        self.emoji_patterns = {
+            'excited': ["🔥", "✨", "🎉", "🚀"],
+            'happy': ["😍", "🥰", "😊", "👍"],
+            'shopping': ["🛍️", "🛒", "💰", "💳"],
+            'trending': ["📈", "🏆", "💯", "⭐"]
+        }
+
+    def generate_hashtags(self):
+        base_tags = ["shopeeShop", "XuHuong", "Trending"]
+        custom_tags = random.sample([
+            "SanPhamHot", "DealHot", "MuaSam", 
+            "HotTrend", "ShopTre", "BatTrend"
+        ], 3)
+        return " ".join(["#" + tag for tag in base_tags + custom_tags])
+
+    def generate_emoji_sequence(self):
+        mood = random.choice(list(self.emoji_patterns.keys()))
+        return " ".join(random.sample(self.emoji_patterns[mood], 2))
+
+    def generate_caption(self, product):
+        product_name = product.get("productName", "Sản phẩm hot")
+        template = random.choice(self.templates["captions"])
+
+        variables = {
+            "productName": product_name,
+            "shopeeUrl": product.get("shopeeUrl", ""),
+            "emoji": self.generate_emoji_sequence(),
+            "hashtags": self.generate_hashtags()
+        }
+
+        caption = template.format(**variables)
+
+        if variables["shopeeUrl"] and variables["shopeeUrl"] not in caption:
+            caption += f"\n\nXem ngay: {variables['shopeeUrl']}"
+
+        return caption
+
+class FacebookPoster:
+    def __init__(self):
+        load_dotenv()
+        self._validate_environment()
+        self._init_clients()
+        self.content_gen = ContentGenerator()
+
+    def _validate_environment(self):
+        required = ['MONGODB_URI', 'FACEBOOK_ACCESS_TOKEN', 'FACEBOOK_PAGE_ID']
+        missing = [k for k in required if not os.getenv(k)]
+        if missing:
+            raise EnvironmentError(f"Missing env vars: {', '.join(missing)}")
+
+    def _init_clients(self):
+        self.mongo_client = MongoClient(os.getenv("MONGODB_URI"))
+        db = self.mongo_client.get_database("auto_post")
+        self.products_col = db["products"]
+        self.post_history_col = db["post_history"]
+        self.graph = facebook.GraphAPI(access_token=os.getenv("FACEBOOK_ACCESS_TOKEN"), version="3.0")
+        self.fb_page_id = os.getenv("FACEBOOK_PAGE_ID")
+
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(min=2, max=10), retry=retry_if_exception_type(Exception))
+    def _upload_images(self, image_urls):
+        uploaded = []
+        for url in image_urls[:4]:
+            try:
+                resp = requests.get(url, stream=True, timeout=10)
+                resp.raise_for_status()
+                res = self.graph.put_photo(
+                    image=resp.raw,
+                    album_path=f"{self.fb_page_id}/photos",
+                    published=False
+                )
+                uploaded.append({"media_fbid": res["id"]})
+            except Exception as e:
+                logging.warning(f"Image upload failed: {e}")
+        if not uploaded:
+            raise Exception("No images uploaded")
+        return uploaded
+
+    def process_product(self, product_id):
+        product = self.products_col.find_one({"_id": ObjectId(product_id)})
+        if not product:
+            return False
+
+        caption = self.content_gen.generate_caption(product)
+        images = product.get("images", [])
+        if not images:
+            return False
+
+        selected = random.sample(images, min(len(images), 4))
+        
+        try:
+            uploaded = self._upload_images(selected)
+            attached_media = [{"media_fbid": media["media_fbid"]} for media in uploaded]
+            
+            post_args = {
+                "message": caption,
+                "attached_media": json.dumps(attached_media),
+                "published": True
+            }
+
+            post = self.graph.request(
+                f"{self.fb_page_id}/feed",
+                method="POST",
+                post_args=post_args
+            )
+            
+            self.post_history_col.insert_one({
+                "productId": product["_id"],
+                "postId": post["id"],
+                "timestamp": datetime.utcnow(),
+                "caption": caption,
+                "imagesUsed": len(uploaded)
+            })
+            
+            self.products_col.update_one(
+                {"_id": product["_id"]},
+                {"$set": {"lastPosted": datetime.utcnow()}}
+            )
+            
+            return True
+        except Exception as e:
+            logging.error(f"Failed to post product {product_id}: {str(e)}")
+            return False
+
+    def run_as_service(self):
+        while True:
+            try:
+                query = {
+                    "$or": [
+                        {"postedHistory": {"$exists": False}},
+                        {"lastPosted": {"$lt": datetime.utcnow() - timedelta(days=7)}}
+                    ],
+                    "images": {"$ne": [], "$exists": True}
+                }
+
+                products = list(self.products_col.find(query).limit(random.randint(1, 5)))
+                for p in products:
+                    success = self.process_product(str(p["_id"]))
+                    if success:
+                        time.sleep(random.randint(60, 300))
+                time.sleep(random.randint(60, 1800))
+            except KeyboardInterrupt:
+                logging.info("Service stopped by user")
+                break
+            except Exception as e:
+                logging.error(f"Service error: {str(e)}")
+                time.sleep(300)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--product-id', help='Process one product by ID')
+    parser.add_argument('--test-content', action='store_true')
+    args = parser.parse_args()
+
+    bot = FacebookPoster()
+
+    if args.test_content:
+        sample = {
+            "productName": "Áo thun cổ tròn in hình",
+            "shopeeUrl": "https://shopee.com/@shop/video/123",
+            "description": "Áo thun chất liệu cotton dễ thương",
+            "images": ["https://example.com/image1.jpg"]
+        }
+        for i in range(5):
+            print(f"\nCaption {i+1}:\n{bot.content_gen.generate_caption(sample)}")
+    elif args.product_id:
+        bot.process_product(args.product_id)
+    else:
+        bot.run_as_service()
