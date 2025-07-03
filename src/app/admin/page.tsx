@@ -1,16 +1,34 @@
 // app/admin/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import ProductTable from '@/components/admin/ProductTable';
 import CategoryTable from '@/components/admin/CategoryTable';
 
 type AdminTab = 'products' | 'categories';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<AdminTab>('products');
+  const { data: session, status } = useSession();
   const router = useRouter();
+  const [activeTab, setActiveTab] = useState<AdminTab>('products');
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/admin/login');
+    } else if (session?.user?.role !== 'admin') {
+      router.push('/auth/unauthorized');
+    }
+  }, [status, session, router]);
+
+  if (status === 'loading') {
+    return <div>Loading...</div>;
+  }
+
+  if (!session || session.user?.role !== 'admin') {
+    return null;
+  }
 
   const handleTabChange = (tab: AdminTab) => {
     setActiveTab(tab);

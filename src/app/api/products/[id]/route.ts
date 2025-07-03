@@ -57,3 +57,30 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     );
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  try {
+    await connectDB();
+    
+    const deletedProduct = await Product.findByIdAndDelete(params.id);
+
+    if (!deletedProduct) {
+      return NextResponse.json(
+        { success: false, error: 'Sản phẩm không tồn tại' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Sản phẩm đã được xóa thành công',
+      data: deletedProduct 
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json(
+      { success: false, error: errorMessage },
+      { status: 500 }
+    );
+  }
+}

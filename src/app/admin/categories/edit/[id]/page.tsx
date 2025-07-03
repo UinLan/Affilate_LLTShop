@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { FiSave, FiX } from 'react-icons/fi';
 
@@ -11,17 +11,20 @@ interface ICategory {
   description?: string;
 }
 
-export default function EditCategoryPage({ params }: { params: { id: string } }) {
+export default function EditCategoryPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [category, setCategory] = useState<ICategory | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Unwrap the params promise
+  const { id } = use(params);
 
   useEffect(() => {
     const fetchCategory = async () => {
       try {
-        const res = await fetch(`/api/categories/${params.id}`);
+        const res = await fetch(`/api/categories/${id}`);
         if (!res.ok) throw new Error('Failed to fetch category');
         
         const data = await res.json();
@@ -34,7 +37,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     };
 
     fetchCategory();
-  }, [params.id]);
+  }, [id]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -47,7 +50,7 @@ export default function EditCategoryPage({ params }: { params: { id: string } })
     
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/categories/${params.id}`, {
+      const res = await fetch(`/api/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: category.name })

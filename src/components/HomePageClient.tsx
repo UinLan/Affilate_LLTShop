@@ -16,7 +16,7 @@ export default function HomePageClient({ categories }: HomePageClientProps) {
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-4">
   <h1 className="text-4xl md:text-5xl font-extrabold text-blue-700 drop-shadow-sm mb-4">
-    🔥 Sản phẩm nổi bật
+    🔥 Sản Phẩm Nổi Bật
   </h1>
   <p className="text-gray-600 max-w-xl mx-auto">
     Khám phá những sản phẩm chất lượng, giá hợp lý, được chọn lọc từ Shopee.

@@ -30,14 +30,14 @@ export default async function ProductDetailPage({ params }: { params: { id: stri
       <div className="max-w-3xl mx-auto p-4">
         <h1 className="text-2xl font-bold mb-4">{product.productName}</h1>
         <p className="mb-2 text-gray-600">
-          Link TikTok:{' '}
+          Link shopee:{' '}
           <a
-            href={product.tiktokUrl}
+            href={product.shopeeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-indigo-600 underline"
           >
-            {product.tiktokUrl}
+            {product.shopeeUrl}
           </a>
         </p>
         <p className="mb-4">{product.description}</p>
