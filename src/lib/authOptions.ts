@@ -33,13 +33,13 @@ export const authOptions: AuthOptions = {
         }
 
         const user = await getUserByEmail(credentials.email);
-        if (!user) throw new Error('Email hoặc mật khẩu không đúng');
+        if (!user) throw new Error('Thông tin đăng nhập không đúng');
 
         const passwordMatch = await compare(credentials.password, user.password);
         const pinMatch = await compare(credentials.pin, user.pin);
 
         if (!passwordMatch || !pinMatch) {
-          throw new Error('Email hoặc mật khẩu không đúng');
+          throw new Error('Thông tin đăng nhập không đúng');
         }
 
         return { id: user._id.toString(), email: user.email, role: user.role };
