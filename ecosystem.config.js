@@ -1,6 +1,6 @@
 module.exports = {
   apps: [{
-    name: "shopee_to_facebook",
+    name: "shopee-to-facebook",
     script: "python",
     args: "C:/shopee_to_facebook/shopee_to_facebook.py",
     interpreter: "",
