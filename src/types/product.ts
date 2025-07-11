@@ -5,6 +5,7 @@ export interface IProductForm {
   productName: string;
   images: string[];
   postingTemplates?: IPostingTemplate[];
+  videoUrl?: string;
 }
 
 export interface IPostingTemplate {

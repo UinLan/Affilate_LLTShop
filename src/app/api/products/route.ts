@@ -1,3 +1,5 @@
+'use server';
+
 import { NextResponse } from 'next/server';
 import Product from '@/lib/models/Product';
 import connectDB from '@/lib/mongodb';
@@ -7,430 +9,218 @@ import Category from '@/lib/models/Category';
 import PostHistory from '@/lib/models/PostHistory';
 import axios from 'axios';
 
-// Kết nối database
+// Kết nối cơ sở dữ liệu
 await connectDB();
 
-// Cấu hình Facebook từ biến môi trường
+// Cấu hình Facebook
 const FACEBOOK_ACCESS_TOKEN = process.env.FACEBOOK_ACCESS_TOKEN;
 const FACEBOOK_PAGE_ID = process.env.FACEBOOK_PAGE_ID;
 const FB_API_VERSION = 'v18.0';
 
-// Lớp tạo nội dung
-class ContentGenerator {
-  private templates = {
-    introductions: [
-      "Khám phá ngay {productName} - ",
-      "{productName} - ",
-       "Bạn đã biết đến {productName} chưa? ",
-                "Giới thiệu {productName} - ",
-                "Đừng bỏ lỡ {productName} - ",
-                "{productName} đang chờ bạn khám phá! ",
-                "Mới có {productName} - ",
-                "Xuất hiện {productName} - ",
-                "Trải nghiệm ngay {productName} - ",
-                "Cơ hội sở hữu {productName} - ",
-                "{productName} là lựa chọn hoàn hảo! ",
-                "Đã đến lúc nâng cấp với {productName} - ",
-                "{productName} mang đến trải nghiệm mới! ",
-                "Bạn sẽ yêu thích {productName} - ",
-                "{productName} chính là điều bạn cần! ",
-                "Không thể bỏ qua {productName} - ",
-                "{productName} làm mới cuộc sống của bạn! ",
-                "Phát hiện {productName} - ",
-                "{productName} đáng để thử nghiệm! ",
-                "Bất ngờ với {productName} - ",
-                "{productName} sẽ khiến bạn hài lòng! ",
-                "Đón nhận {productName} - ",
-                "{productName} thay đổi mọi thứ! ",
-                "Trải nghiệm khác biệt với {productName} - ",
-                "{productName} là giải pháp tuyệt vời! ",
-                "Đã có {productName} - ",
-                "Mở ra cùng {productName} - ",
-                "{productName} tạo nên sự khác biệt! ",
-                "Chào đón {productName} - ",
-                "{productName} nâng tầm trải nghiệm! ",
-                "Khám phá thế giới mới với {productName} - ",
-                "{productName} đem lại cảm hứng mới! ",
-                "Sẵn sàng cùng {productName} - ",
-                "{productName} làm phong phú cuộc sống! ",
-                "Bắt đầu hành trình với {productName} - ",
-                "{productName} mở ra những khả năng mới! ",
-                "Đột phá cùng {productName} - ",
-                "{productName} thổi luồng gió mới! ",
-                "Cảm nhận sự khác biệt từ {productName} - ",
-                "{productName} là bước tiến mới! ",
-                "Khơi nguồn cảm hứng với {productName} - ",
-                "{productName} kiến tạo phong cách! ",
-                "Đồng hành cùng {productName} - ",
-                "{productName} tạo dấu ấn riêng! ",
-                "Khẳng định cá tính với {productName} - ",
-                "{productName} là sự lựa chọn thông minh! ",
-                "Đổi mới mỗi ngày với {productName} - ",
-                "{productName} đem đến những giá trị mới! ",
-                "Khơi dậy tiềm năng với {productName} - ",
-                "{productName} là người bạn đồng hành! ",
-                "Sáng tạo không giới hạn với {productName} - ",
-                "{productName} truyền cảm hứng! ",
-                "Thay đổi tích cực với {productName} - ",
-                "{productName} kiến tạo không gian sống! ",
-                "Nâng tầm chất lượng với {productName} - ",
-                "{productName} đáp ứng mọi nhu cầu! ",
-                "Hoàn thiện bản thân với {productName} - ",
-                "{productName} là giải pháp hoàn hảo! ",
-                "Tận hưởng cuộc sống với {productName} - ",
-                "{productName} mang lại niềm vui mỗi ngày! ",
-                "Khơi nguồn sáng tạo với {productName} - ",
-                "{productName} là điểm nhấn hoàn hảo! ",
-                "Đón đầu xu hướng với {productName} - ",
-                "{productName} làm nên sự khác biệt! ",
-                "Khám phá tiềm năng với {productName} - ",
-                "{productName} là bí quyết thành công! ",
-                "Tạo dấu ấn cá nhân với {productName} - ",
-                "{productName} nâng cao chất lượng sống! ",
-                "Đồng hành cùng chất lượng với {productName} - ",
-                "{productName} là sự đầu tư xứng đáng! ",
-                "Trải nghiệm đẳng cấp với {productName} - ",
-                "{productName} kiến tạo phong cách sống! ",
-                "Khẳng định đẳng cấp với {productName} - ",
-                "{productName} là lựa chọn không thể bỏ qua! ",
-                "Mang đến cảm hứng bất tận với {productName} - ",
-                "{productName} là người bạn không thể thiếu! ",
-                "Đột phá mỗi ngày với {productName} - ",
-                "{productName} thay đổi cách bạn sống! ",
-                "Khơi dậy đam mê với {productName} - ",
-                "{productName} là nguồn cảm hứng vô tận! ",
-                "Tận hưởng những khoảnh khắc với {productName} - ",
-                "{productName} là giải pháp thông minh! ",
-                "Khám phá những điều mới mẻ với {productName} - ",
-                "{productName} mang đến trải nghiệm tuyệt vời! ",
-                "Đồng hành cùng sự tiện lợi với {productName} - ",
-                "{productName} là sự lựa chọn hoàn hảo! ",
-                "Nâng tầm không gian sống với {productName} - ",
-                "{productName} đem lại sự hài lòng tuyệt đối! ",
-                "Khẳng định phong cách với {productName} - ",
-                "{productName} là bí quyết của sự thành công! ",
-                "Tạo điểm nhấn ấn tượng với {productName} - ",
-                "{productName} làm nên sự khác biệt! ",
-                "Đón đầu công nghệ với {productName} - ",
-                "{productName} là xu hướng của tương lai! ",
-                "Khám phá tiện ích vượt trội với {productName} - ",
-                "{productName} đáp ứng mọi tiêu chuẩn! ",
-                "Trải nghiệm sự hoàn hảo với {productName} - ",
-                "{productName} là sự kết hợp hoàn hảo! ",
-                "Khơi nguồn cảm hứng sáng tạo với {productName} - ",
-                "{productName} là giải pháp tối ưu! ",
-                "Đồng hành cùng sự tiện nghi với {productName} - ",
-                "{productName} mang lại giá trị bền vững! ",
-                "Khẳng định đẳng cấp cùng {productName} - ",
-                "{productName} là sự lựa chọn thông thái! ",
-                "Tận hưởng cuộc sống trọn vẹn với {productName} - ",
-                "{productName} đem đến những trải nghiệm mới lạ! ",
-                "Khám phá thế giới đa sắc màu với {productName} - ",
-                "{productName} là người bạn đồng hành đáng tin cậy! ",
-                "Đột phá giới hạn với {productName} - ",
-                "{productName} kiến tạo không gian sống động! ",
-                "Nâng tầm phong cách với {productName} - ",
-                "{productName} là sự kết hợp hoàn mỹ! ",
-                "Khơi dậy tiềm năng sáng tạo với {productName} - ",
-                "{productName} mang đến luồng gió mới! "
-    ],
-    descriptions: [
-      "sản phẩm chất lượng cao với thiết kế tinh tế.",
-      "lựa chọn hoàn hảo cho nhu cầu hàng ngày của bạn.",
-      "giải pháp thông minh cho cuộc sống hiện đại.",
-                "sản phẩm đáng tin cậy với hiệu suất vượt trội.",
-                "trải nghiệm mới mẻ đang chờ bạn khám phá.",
-                "sự kết hợp hoàn hảo giữa tiện ích và thẩm mỹ.",
-                "sản phẩm không thể thiếu trong đời sống hằng ngày.",
-                "lựa chọn lý tưởng cho phong cách sống của bạn.",
-                "điểm nhấn hoàn hảo cho không gian sống.",
-                "sản phẩm mang đến sự hài lòng tuyệt đối.",
-                "giải pháp tối ưu cho mọi nhu cầu sử dụng.",
-                "sản phẩm được thiết kế để phục vụ bạn tốt nhất.",
-                "trải nghiệm khác biệt chỉ có ở sản phẩm này.",
-                "sự lựa chọn thông minh cho người tiêu dùng.",
-                "sản phẩm đáp ứng mọi tiêu chuẩn chất lượng.",
-                "phong cách mới cho cuộc sống hiện đại.",
-                "sản phẩm đem lại cảm giác thoải mái khi sử dụng.",
-                "giải pháp hoàn hảo cho những yêu cầu khắt khe.",
-                "sản phẩm được yêu thích bởi nhiều khách hàng.",
-                "lựa chọn hàng đầu cho những ai đam mê chất lượng.",
-                "sản phẩm tạo nên sự khác biệt rõ rệt.",
-                "trải nghiệm đẳng cấp dành cho người dùng.",
-                "sự kết hợp hoàn hảo giữa công năng và thẩm mỹ.",
-                "sản phẩm mang đến giá trị bền vững theo thời gian.",
-                "giải pháp thông minh cho cuộc sống tiện nghi.",
-                "sản phẩm được thiết kế với sự chăm chút tỉ mỉ.",
-                "lựa chọn không thể bỏ qua cho người sành điệu.",
-                "sản phẩm đem lại niềm vui trong mỗi lần sử dụng.",
-                "trải nghiệm tuyệt vời chỉ có ở sản phẩm này.",
-                "sự lựa chọn hoàn hảo cho mọi lứa tuổi.",
-                "sản phẩm tạo nên phong cách riêng biệt.",
-                "giải pháp tối ưu cho nhu cầu đa dạng.",
-                "sản phẩm được ưa chuộng nhờ chất lượng vượt trội.",
-                "lựa chọn lý tưởng cho những ai đề cao tiện ích.",
-                "sản phẩm mang đến sự tiện lợi không ngờ.",
-                "trải nghiệm mới lạ đang chờ bạn khám phá.",
-                "sự kết hợp hoàn mỹ giữa hình thức và nội dung.",
-                "sản phẩm đáp ứng mọi mong đợi của khách hàng.",
-                "giải pháp hoàn hảo cho cuộc sống năng động.",
-                "sản phẩm được thiết kế để phục vụ lâu dài.",
-                "lựa chọn hàng đầu cho những ai yêu thích sự hoàn hảo.",
-                "sản phẩm tạo nên dấu ấn khó phai.",
-                "trải nghiệm khác biệt so với những gì bạn biết.",
-                "sự lựa chọn thông minh cho người tiêu dùng hiện đại.",
-                "sản phẩm đem lại giá trị vượt trội so với giá thành.",
-                "giải pháp tối ưu cho mọi không gian sống.",
-                "sản phẩm được chế tác với sự tỉ mỉ cao nhất.",
-                "lựa chọn không thể thiếu cho cuộc sống tiện nghi.",
-                "sản phẩm mang đến cảm giác hài lòng ngay từ cái nhìn đầu tiên.",
-                "trải nghiệm đáng nhớ chỉ có ở sản phẩm này.",
-                "sự kết hợp tinh tế giữa truyền thống và hiện đại.",
-                "sản phẩm đáp ứng mọi tiêu chuẩn khắt khe nhất.",
-                "giải pháp hoàn hảo cho nhu cầu đa dạng.",
-                "sản phẩm được ưa chuộng nhờ tính năng vượt trội.",
-                "lựa chọn lý tưởng cho những ai đề cao chất lượng.",
-                "sản phẩm mang đến sự tiện lợi vượt mong đợi.",
-                "trải nghiệm mới mẻ đang chờ bạn khám phá.",
-                "sự lựa chọn hoàn hảo cho mọi lứa tuổi.",
-                "sản phẩm tạo nên phong cách riêng biệt.",
-                "giải pháp tối ưu cho nhu cầu đa dạng.",
-                "sản phẩm được ưa chuộng nhờ chất lượng vượt trội.",
-                "lựa chọn hàng đầu cho những ai yêu thích sự hoàn hảo.",
-                "sản phẩm tạo nên dấu ấn khó phai.",
-                "trải nghiệm khác biệt so với những gì bạn biết.",
-                "sự lựa chọn thông minh cho người tiêu dùng hiện đại.",
-                "sản phẩm đem lại giá trị vượt trội so với giá thành.",
-                "giải pháp tối ưu cho mọi không gian sống.",
-                "sản phẩm được chế tác với sự tỉ mỉ cao nhất.",
-                "lựa chọn không thể thiếu cho cuộc sống tiện nghi.",
-                "sản phẩm mang đến cảm giác hài lòng ngay từ cái nhìn đầu tiên.",
-                "trải nghiệm đáng nhớ chỉ có ở sản phẩm này.",
-                "sự kết hợp tinh tế giữa truyền thống và hiện đại.",
-                "sản phẩm đáp ứng mọi tiêu chuẩn khắt khe nhất.",
-                "giải pháp hoàn hảo cho nhu cầu đa dạng.",
-                "sản phẩm được ưa chuộng nhờ tính năng vượt trội.",
-                "lựa chọn lý tưởng cho những ai đề cao chất lượng.",
-                "sản phẩm mang đến sự tiện lợi vượt mong đợi."
-    ],
-    calls_to_action: [
-      "Hãy khám phá ngay hôm nay!",
-      "Đừng bỏ lỡ cơ hội sở hữu!",
-      "Trải nghiệm ngay để cảm nhận sự khác biệt!",
-                "Hãy là người đầu tiên sở hữu sản phẩm này!",
-                "Khám phá ngay để không phải hối tiếc!",
-                "Đây là thời điểm hoàn hảo để trải nghiệm!",
-                "Hãy tự mình cảm nhận chất lượng!",
-                "Đừng chần chừ, hãy khám phá ngay!",
-                "Cơ hội trải nghiệm đang chờ đón bạn!",
-                "Hãy làm mới cuộc sống của bạn ngay hôm nay!",
-                "Khám phá ngay để thấy sự khác biệt!",
-                "Hãy nâng tầm trải nghiệm của bạn!",
-                "Đừng bỏ qua sản phẩm tuyệt vời này!",
-                "Hãy là người tiên phong trải nghiệm!",
-                "Khám phá ngay để không bỏ lỡ cơ hội!",
-                "Hãy tận hưởng những giá trị vượt trội!",
-                "Đây là lúc để bạn thay đổi!",
-                "Hãy mở ra những khả năng mới!",
-                "Đừng bỏ qua trải nghiệm đáng giá này!",
-                "Hãy khẳng định phong cách của bạn!",
-                "Khám phá ngay để cảm nhận sự hoàn hảo!",
-                "Hãy làm mới mọi thứ ngay hôm nay!",
-                "Đừng bỏ lỡ cơ hội đặc biệt này!",
-                "Hãy trải nghiệm sự khác biệt ngay!",
-                "Khám phá ngay để thấy điều kỳ diệu!",
-                "Hãy nâng cao chất lượng cuộc sống!",
-                "Đây là thời điểm lý tưởng để thay đổi!",
-                "Hãy mở rộng tầm nhìn của bạn!",
-                "Đừng bỏ qua những giá trị tuyệt vời!",
-                "Hãy khẳng định đẳng cấp của bạn!",
-                "Khám phá ngay để không phải hối hận!",
-                "Hãy tận hưởng những tiện ích vượt trội!",
-                "Đây là lúc để bạn tỏa sáng!",
-                "Hãy khơi nguồn cảm hứng mới!",
-                "Đừng bỏ lỡ trải nghiệm đáng nhớ này!",
-                "Hãy tạo dấu ấn riêng của bạn!",
-                "Khám phá ngay để cảm nhận sự đột phá!",
-                "Hãy làm mới bản thân ngay hôm nay!",
-                "Đừng bỏ qua cơ hội đặc biệt này!",
-                "Hãy trải nghiệm sự hoàn hảo ngay!",
-                "Khám phá ngay để thấy sự vượt trội!",
-                "Hãy nâng tầm đẳng cấp của bạn!",
-                "Đây là thời điểm để bạn tỏa sáng!",
-                "Hãy mở ra chân trời mới!",
-                "Đừng bỏ qua những tiện ích tuyệt vời!",
-                "Hãy khẳng định phong cách độc đáo!",
-                "Khám phá ngay để không phải tiếc nuối!",
-                "Hãy tận hưởng những giá trị đích thực!",
-                "Đây là lúc để bạn thay đổi mọi thứ!",
-                "Hãy khơi nguồn sáng tạo mới!",
-                "Đừng bỏ lỡ trải nghiệm tuyệt vời này!",
-                "Hãy tạo nên sự khác biệt của riêng bạn!",
-                "Khám phá ngay để cảm nhận chất lượng!",
-                "Hãy làm mới cuộc sống ngay hôm nay!",
-                "Đừng bỏ qua cơ hội hiếm có này!",
-                "Hãy trải nghiệm sự vượt trội ngay!",
-                "Khám phá ngay để thấy điều bất ngờ!",
-                "Hãy nâng cao trải nghiệm của bạn!",
-                "Đây là thời điểm lý tưởng để đổi mới!",
-                "Hãy mở rộng khả năng của bạn!",
-                "Đừng bỏ qua những giá trị đặc biệt!",
-                "Hãy khẳng định cá tính của bạn!",
-                "Khám phá ngay để không phải hối hận!",
-                "Hãy tận hưởng những tiện nghi vượt trội!",
-                "Đây là lúc để bạn tỏa sáng!",
-                "Hãy khơi nguồn cảm hứng sáng tạo!",
-                "Đừng bỏ lỡ trải nghiệm đáng giá này!",
-                "Hãy tạo dấu ấn cá nhân của bạn!",
-                "Khám phá ngay để cảm nhận sự khác biệt!",
-                "Hãy làm mới mọi thứ ngay hôm nay!",
-                "Đừng bỏ qua cơ hội đặc biệt này!",
-                "Hãy trải nghiệm sự hoàn hảo ngay!",
-                "Khám phá ngay để thấy sự vượt trội!",
-                "Hãy nâng tầm đẳng cấp của bạn!",
-                "Đây là thời điểm để bạn tỏa sáng!",
-                "Hãy mở ra chân trời mới!",
-                "Đừng bỏ qua những tiện ích tuyệt vời!",
-                "Hãy khẳng định phong cách độc đáo!",
-                "Khám phá ngay để không phải tiếc nuối!",
-                "Hãy tận hưởng những giá trị đích thực!",
-                "Đây là lúc để bạn thay đổi mọi thứ!",
-                "Hãy khơi nguồn sáng tạo mới!",
-                "Đừng bỏ lỡ trải nghiệm tuyệt vời này!",
-                "Hãy tạo nên sự khác biệt của riêng bạn!"
-    ]
-  };
+// Interface cho lỗi có message
+interface ErrorWithMessage {
+  message: string;
+}
 
- private emojiPatterns: Record<string, string[]> = {
-  excited: ["🔥", "✨", "🎉", "🚀", "💫", "🌟", "⚡", "🌈"],
-  happy: ["😍", "🥰", "😊", "👍", "👌", "🤩", "😎", "🙌"],
-  shopping: ["🛍️", "🛒", "💰", "💳", "🎁", "👜", "👛", "🪙"],
-  trending: ["📈", "🏆", "💯", "⭐", "🎯", "🔝", "🏅", "👑"],
-  quality: ["✅", "🔄", "⚙️", "🔧", "🛠️", "📐", "🧰", "🔨"],
-  lifestyle: ["🏡", "🌿", "☕", "📚", "🎨", "🎼", "🏖️", "⛺"]
-};
-  private hashtagGroups = [
-    ["shopee", "xuHuong", "sanPhamHot"],
-    ["dealHot", "shopTre", "muaSam"],
-    ["mustHave", "bestSeller", "top1"],
-    ["chinhHang", "chatLuong", "uyTin"],
-    ["tietKiem", "giaTot", "khuyenMai"],
-    ["noiBat", "danhGiaCao", "yeuThich"],
-    ["phoBien", "banChay", "hotTrend"],
-    ["moiRaMat", "docDao", "sangTao"],
-    ["tienLoi", "deSuDung", "thongMinh"],
-    ["phongCach", "thoiTrang", "hienDai"]
-  ];
+// Kiểm tra nếu error có message
+function isErrorWithMessage(error: unknown): error is ErrorWithMessage {
+  return typeof error === 'object' && error !== null && 'message' in error;
+}
 
-  generateHashtags() {
-    const selectedGroups = this.hashtagGroups
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 3);
-    const flatTags = selectedGroups.flat();
-    const uniqueTags = [...new Set(flatTags)].slice(0, 9);
-    return uniqueTags.map(tag => `#${tag}`).join(' ');
-  }
+// Lấy message từ error
+function getErrorMessage(error: unknown): string {
+  if (isErrorWithMessage(error)) return error.message;
+  return 'Unknown error';
+}
 
-  generateEmojiSequence() {
-    const moods = Object.keys(this.emojiPatterns);
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    const emojis = this.emojiPatterns[randomMood];
-    return emojis
-      .sort(() => 0.5 - Math.random())
-      .slice(0, 2)
-      .join(' ');
-  }
+// Hàm ghi log lỗi
+async function logError(message: string): Promise<void> {
+  console.error('Error Notification:', message);
+  // Có thể thêm logic gửi email/notification ở đây
+}
 
-  generateCaption(product: any) {
-    const productName = product.productName || "Sản phẩm chất lượng";
-    const shopeeUrl = product.shopeeUrl || "";
+// Hàm gọi Ollama để tạo caption tiếng Việt
+async function generateFullCaptionWithOllama(product: any): Promise<string> {
+  const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY: ${product.shopeeUrl}` : '';
+  
+  const prompt = `
+Hãy viết một caption tiếng Việt hấp dẫn để đăng Facebook quảng bá sản phẩm với các thông tin sau:
 
-    const intro = this.templates.introductions[
-      Math.floor(Math.random() * this.templates.introductions.length)
-    ].replace('{productName}', productName);
-    
-    const desc = this.templates.descriptions[
-      Math.floor(Math.random() * this.templates.descriptions.length)
-    ];
-    
-    const cta = this.templates.calls_to_action[
-      Math.floor(Math.random() * this.templates.calls_to_action.length)
-    ];
-    
-    const emoji = this.generateEmojiSequence();
-    const hashtags = this.generateHashtags();
+- Tên sản phẩm: ${product.productName}
+- Mô tả: ${product.description || 'Không có mô tả chi tiết'}
+- Giá bán: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'} 
+- Khuyến mãi: ${product.discount || 'Đang có ưu đãi hấp dẫn'}
 
-    const captionParts = [
-      intro + desc,
-      cta,
-      emoji,
-      hashtags
-    ];
+YÊU CẦU:
+1. Viết bằng tiếng Việt tự nhiên, thu hút
+2. Thêm emoji phù hợp
+3. Kèm 5-10 hashtag tiếng Việt không dấu, **đặt trên dòng mới**
+4. Giọng văn kích thích mua hàng
+5. LUÔN ĐẶT LINK SHOPEE Ở CUỐI BÀI VIẾT NẾU CÓ
+6. Không đề cập đến "caption" trong nội dung trả về
 
-    if (shopeeUrl) {
-      captionParts.push(`\n\nXem ngay: ${shopeeUrl}`);
-    }
+Chỉ trả về nội dung hoàn chỉnh, không giải thích thêm.
+${shopeeInfo}
+`.trim();
 
-    return captionParts.join('\n\n');
+  try {
+    const response = await fetch('http://localhost:11434/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'llama3',
+        prompt,
+        stream: false
+      })
+    });
+
+    const data = await response.json();
+    return data.response?.trim() || `🔥 ${product.productName} - Sản phẩm chất lượng!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n👉 Mua ngay: ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal`;
+  } catch (error) {
+    console.error('Lỗi khi tạo caption:', getErrorMessage(error));
+    return `🎯 ${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 Mua ngay: ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
   }
 }
 
-// Hàm upload ảnh lên Facebook
-async function uploadImageToFacebook(imageUrl: string) {
+// Tải ảnh lên Facebook
+async function uploadImageToFacebook(imageUrl: string): Promise<{ id: string }> {
   try {
     const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
     const imageBuffer = Buffer.from(response.data, 'binary');
-    
-    // Create a Blob from the Buffer
     const blob = new Blob([imageBuffer], { type: response.headers['content-type'] || 'image/jpeg' });
-    
+
     const formData = new FormData();
     formData.append('access_token', FACEBOOK_ACCESS_TOKEN!);
-    formData.append('source', blob, 'image.jpg'); // Provide a filename
+    formData.append('source', blob, 'image.jpg');
     formData.append('published', 'false');
 
     const uploadResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/photos`,
       formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      }
+      { headers: { 'Content-Type': 'multipart/form-data' } }
     );
 
     return uploadResponse.data;
   } catch (error) {
-    console.error('Error uploading image:', error);
+    console.error(`Lỗi khi tải ảnh lên Facebook: ${imageUrl}`, getErrorMessage(error));
     throw error;
   }
 }
 
-// Hàm đăng bài lên Facebook
-async function postToFacebook(caption: string, imageIds: string[]) {
+// Hàm kiểm tra video URL
+async function validateVideoUrl(url: string): Promise<{ valid: boolean; size: number; type: string }> {
   try {
-    const attachedMedia = imageIds.map(id => ({
-      media_fbid: id
-    }));
+    const response = await axios.head(url, { timeout: 5000 });
+    
+    if (!response.headers['content-type']?.includes('video/')) {
+      throw new Error('URL không trỏ đến file video hợp lệ');
+    }
+    
+    return {
+      valid: true,
+      size: parseInt(response.headers['content-length'] || '0'),
+      type: response.headers['content-type']
+    };
+  } catch (error) {
+    console.error('Lỗi kiểm tra video URL:', getErrorMessage(error));
+    throw new Error(`Không thể xác minh video URL: ${getErrorMessage(error)}`);
+  }
+}
 
-    const response = await axios.post(
+// Đăng bài lên Facebook
+async function postToFacebook(
+  caption: string, 
+  imageIds: string[], 
+  videoUrl?: string
+): Promise<{ id: string; video_uploaded: boolean }> {
+  try {
+    let attachedMedia = imageIds.map(id => ({ media_fbid: id }));
+    
+    if (videoUrl && videoUrl.trim() !== '') {
+      try {
+        // Bước 1: Kiểm tra video URL
+        const videoInfo = await validateVideoUrl(videoUrl);
+        
+        // Bước 2: Tạo video container
+        const initResponse = await axios.post(
+          `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/videos`,
+          {
+            access_token: FACEBOOK_ACCESS_TOKEN,
+            upload_phase: 'start',
+            file_size: videoInfo.size,
+            file_url: videoUrl,
+            published: false,
+            description: caption
+          },
+          { timeout: 10000 }
+        );
+
+        if (!initResponse.data.video_id) {
+          throw new Error('Không thể khởi tạo upload video');
+        }
+
+        const videoId = initResponse.data.video_id;
+
+        // Bước 3: Transfer video từ URL
+        await axios.post(
+          `https://graph.facebook.com/${FB_API_VERSION}/${videoId}`,
+          {
+            access_token: FACEBOOK_ACCESS_TOKEN,
+            upload_phase: 'transfer',
+            start_offset: 0,
+            end_offset: videoInfo.size,
+            file_url: videoUrl
+          },
+          { timeout: 30000 }
+        );
+
+        // Bước 4: Hoàn tất upload
+        await axios.post(
+          `https://graph.facebook.com/${FB_API_VERSION}/${videoId}`,
+          {
+            access_token: FACEBOOK_ACCESS_TOKEN,
+            upload_phase: 'finish',
+            description: caption,
+            published: true
+          },
+          { timeout: 10000 }
+        );
+
+        attachedMedia.push({ media_fbid: videoId });
+        
+        console.log(`Đã upload video thành công: ${videoId}`);
+      } catch (error) {
+        const errorMessage = getErrorMessage(error);
+        console.error('Lỗi khi đăng video:', errorMessage);
+        await logError(`Lỗi video: ${errorMessage}`);
+      }
+    }
+
+    // Đăng bài với media đã chuẩn bị
+    const postResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/feed`,
       {
         access_token: FACEBOOK_ACCESS_TOKEN,
         message: caption,
-        attached_media: JSON.stringify(attachedMedia),
+        attached_media: attachedMedia,
         published: true
-      }
+      },
+      { timeout: 15000 }
     );
-
-    return response.data;
+    
+    return {
+      ...postResponse.data,
+      video_uploaded: !!videoUrl
+    };
   } catch (error) {
-    console.error('Error posting to Facebook:', error);
-    throw error;
+    const errorMessage = getErrorMessage(error);
+    console.error('Lỗi khi đăng bài lên Facebook:', errorMessage);
+    throw new Error(`Lỗi đăng bài: ${errorMessage}`);
   }
 }
 
-export async function GET(request: Request) {
+// API GET - Lấy danh sách sản phẩm
+export async function GET(request: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate');
@@ -439,17 +229,12 @@ export async function GET(request: Request) {
 
     let mongoQuery: any = {};
 
-    // Nếu có category
     if (categorySlug) {
       const category = await Category.findOne({ slug: categorySlug });
-      if (category) {
-        mongoQuery.categories = category._id;
-      } else {
-        return NextResponse.json({ success: true, data: [] }, { status: 200 });
-      }
+      if (category) mongoQuery.categories = category._id;
+      else return NextResponse.json({ success: true, data: [] }, { status: 200 });
     }
 
-    // Nếu có từ khóa tìm kiếm
     if (searchTerm) {
       mongoQuery.$or = [
         { productName: { $regex: searchTerm, $options: 'i' } },
@@ -458,12 +243,8 @@ export async function GET(request: Request) {
     }
 
     let query = Product.find(mongoQuery).sort({ createdAt: -1 });
-
     if (populate === 'categories') {
-      query = query.populate({
-        path: 'categories',
-        select: '_id name slug'
-      });
+      query = query.populate({ path: 'categories', select: '_id name slug' });
     }
 
     const products = await query.exec();
@@ -471,21 +252,26 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ success: true, data: clientProducts }, { status: 200 });
   } catch (error) {
-    const err = error as Error;
-    console.error('API Error:', err);
     return NextResponse.json(
-      { success: false, error: err.message, data: [] },
+      { success: false, error: 'Lỗi khi lấy danh sách sản phẩm' }, 
       { status: 500 }
     );
   }
 }
 
-export async function POST(request: Request) {
+// API POST - Tạo sản phẩm mới và đăng lên Facebook
+export async function POST(request: Request): Promise<NextResponse> {
   try {
-    await connectDB();
     const productData: Omit<IProduct, 'postedHistory' | 'createdAt'> = await request.json();
-    
-    // Create new product
+
+    // Validate dữ liệu
+    if (!productData.productName || !productData.images || productData.images.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Tên sản phẩm và ít nhất 1 hình ảnh là bắt buộc' },
+        { status: 400 }
+      );
+    }
+
     const product = new Product({
       ...productData,
       postingTemplates: productData.postingTemplates || []
@@ -493,73 +279,74 @@ export async function POST(request: Request) {
 
     await product.save();
 
-    // Generate content and post to Facebook
-    const contentGen = new ContentGenerator();
-    const caption = contentGen.generateCaption(product);
+    // Tạo caption với URL Shopee ở cuối
+    let caption = await generateFullCaptionWithOllama(product);
 
-    // Select random images (1-4)
-    const images = product.images || [];
-    const selectedImages = images
+    // Đảm bảo URL Shopee ở cuối nếu có
+    if (product.shopeeUrl && !caption.includes(product.shopeeUrl)) {
+      caption += `\n\n🛒 Mua ngay: ${product.shopeeUrl}\n\n`;
+    }
+
+    // Chọn ngẫu nhiên 4 ảnh từ danh sách
+    const selectedImages = (product.images || [])
       .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(images.length, 4));
+      .slice(0, Math.min(product.images.length, 4));
 
-    // Upload images to Facebook
+    // Tải ảnh lên Facebook
     const uploadedImages = [];
     for (const imageUrl of selectedImages) {
       try {
         const uploadResult = await uploadImageToFacebook(imageUrl);
         uploadedImages.push(uploadResult);
       } catch (error) {
-        console.error(`Failed to upload image ${imageUrl}:`, error);
+        console.error(`Lỗi khi tải ảnh lên ${imageUrl}:`, getErrorMessage(error));
       }
     }
 
     if (uploadedImages.length === 0) {
-      // Still save product even if Facebook post fails
-      return NextResponse.json(
-        { 
-          success: true, 
-          product,
-          warning: 'Product created but no images were uploaded to Facebook' 
-        }, 
-        { status: 200 }
-      );
+      throw new Error('Không thể tải lên bất kỳ hình ảnh nào');
     }
 
-    // Post to Facebook
+    // Đăng bài lên Facebook (cả ảnh và video nếu có)
     const postResult = await postToFacebook(
       caption,
-      uploadedImages.map(img => img.id)
+      uploadedImages.map(img => img.id),
+      product.videoUrl
     );
 
-    // Save post history
+    // Lưu lịch sử đăng bài
     const postHistory = new PostHistory({
       productId: product._id,
       postId: postResult.id,
       caption,
       imagesUsed: uploadedImages.length,
+      videoUsed: !!product.videoUrl,
       timestamp: new Date()
     });
     await postHistory.save();
 
-    // Update product with last posted time
+    // Cập nhật sản phẩm
     product.lastPosted = new Date();
     await product.save();
 
-    return NextResponse.json(
-      { 
-        success: true, 
-        product,
-        postId: postResult.id 
-      }, 
-      { status: 201 }
-    );
-
-  } catch (error: any) {
-    console.error('Error creating product:', error);
-    return NextResponse.json(
-      { success: false, error: error.message },
-      { status: 500 }
-    );
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        product: convertToClientProduct(product),
+        postId: postResult.id,
+        caption,
+        imagesUploaded: uploadedImages.length,
+        videoUploaded: !!product.videoUrl
+      },
+      message: 'Đăng sản phẩm lên Facebook thành công'
+    }, { status: 201 });
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
+    console.error('Lỗi khi tạo sản phẩm:', errorMessage);
+    return NextResponse.json({ 
+      success: false, 
+      error: errorMessage || 'Đã xảy ra lỗi khi tạo sản phẩm',
+      stack: process.env.NODE_ENV === 'development' ? (error as Error).stack : undefined
+    }, { status: 500 });
   }
 }
