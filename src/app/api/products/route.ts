@@ -227,21 +227,21 @@ async function postToFacebook(
     throw new Error(`Lỗi đăng bài: ${errorMessage}`);
   }
 }
-
-// API GET - Lấy danh sách sản phẩm
 export async function GET(request: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate');
     const categorySlug = searchParams.get('category');
     const searchTerm = searchParams.get('search')?.trim();
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '8');
 
     let mongoQuery: any = {};
 
     if (categorySlug) {
       const category = await Category.findOne({ slug: categorySlug });
       if (category) mongoQuery.categories = category._id;
-      else return NextResponse.json({ success: true, data: [] }, { status: 200 });
+      else return NextResponse.json({ success: true, data: [], total: 0 }, { status: 200 });
     }
 
     if (searchTerm) {
@@ -251,15 +251,33 @@ export async function GET(request: Request): Promise<NextResponse> {
       ];
     }
 
-    let query = Product.find(mongoQuery).sort({ createdAt: -1 });
+    // Tạo query cơ bản
+    let query = Product.find(mongoQuery)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Thêm populate nếu được yêu cầu
     if (populate === 'categories') {
       query = query.populate({ path: 'categories', select: '_id name slug' });
     }
 
-    const products = await query.exec();
+    // Thực hiện song song cả query và count
+    const [products, total] = await Promise.all([
+      query.exec(),
+      Product.countDocuments(mongoQuery)
+    ]);
+
     const clientProducts = products.map(convertToClientProduct);
 
-    return NextResponse.json({ success: true, data: clientProducts }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      data: clientProducts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Lỗi khi lấy danh sách sản phẩm' }, 
