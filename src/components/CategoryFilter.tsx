@@ -97,33 +97,30 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
 
   return (
     <div className="relative mb-8 group">
-      {/* Background nổi bật với gradient và shadow */}
-      <div className="absolute inset-0 bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 bg-opacity-70 backdrop-blur-sm rounded-xl shadow-xl z-0"></div>
+      {/* Background gradient sống động như ban đầu */}
+      <div className="absolute inset-0 bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 rounded-xl shadow-sm z-0"></div>
 
-
-
-      
       {/* Container chính */}
       <div className="relative px-4 py-3">
-        {/* Nút scroll trái */}
+        {/* Nút scroll trái - Thiết kế sắc nét hơn */}
         {showLeftScroll && (
           <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 border border-gray-200 shadow-lg p-2 rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white border border-gray-200 shadow-lg p-2 rounded-full transition-all opacity-100 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
             onClick={() => scroll('left')}
             aria-label="Scroll left"
           >
-            <ChevronLeft className="w-4 h-4 text-gray-700" />
+            <ChevronLeft className="w-4 h-4 text-gray-700 stroke-[3px]" />
           </button>
         )}
 
-        {/* Nút scroll phải */}
+        {/* Nút scroll phải - Thiết kế sắc nét hơn */}
         {showRightScroll && (
           <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-white hover:bg-gray-100 border border-gray-200 shadow-lg p-2 rounded-full transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
+            className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white border border-gray-200 shadow-lg p-2 rounded-full transition-all opacity-100 group-hover:opacity-100 hover:scale-110 backdrop-blur-sm"
             onClick={() => scroll('right')}
             aria-label="Scroll right"
           >
-            <ChevronRight className="w-4 h-4 text-gray-700" />
+            <ChevronRight className="w-4 h-4 text-gray-700 stroke-[3px]" />
           </button>
         )}
 
@@ -139,26 +136,26 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
           onMouseLeave={endDrag}
           onScroll={checkScrollPosition}
         >
-          {/* Nút "Tất cả" */}
+          {/* Nút "Tất cả" - Giữ gradient như cũ nhưng sắc nét hơn */}
           <button
             className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md border-2 ${
               !currentCategory
                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
-                : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-blue-400 hover:text-blue-600'
+                : 'bg-white/90 text-gray-800 border-gray-200 hover:bg-white hover:border-blue-400 hover:text-blue-600 backdrop-blur-sm'
             }`}
             onClick={() => handleCategoryChange('')}
           >
             Tất cả
           </button>
 
-          {/* Các danh mục */}
+          {/* Các danh mục - Giữ style gradient khi active */}
           {categories.map((category) => (
             <button
               key={category._id}
               className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md border-2 ${
                 currentCategory === category.slug
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
-                  : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100 hover:border-blue-400 hover:text-blue-600'
+                  : 'bg-white/90 text-gray-800 border-gray-200 hover:bg-white hover:border-blue-400 hover:text-blue-600 backdrop-blur-sm'
               }`}
               onClick={() => handleCategoryChange(category.slug)}
             >

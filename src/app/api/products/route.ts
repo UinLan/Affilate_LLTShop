@@ -41,7 +41,7 @@ async function logError(message: string): Promise<void> {
 
 // Hàm gọi Ollama để tạo caption tiếng Việt
 async function generateFullCaptionWithOllama(product: any): Promise<string> {
-  const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY: ${product.shopeeUrl}` : '';
+  const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY:\n${product.shopeeUrl}` : '';
   
   const prompt = `
 Hãy viết một caption tiếng Việt hấp dẫn để đăng Facebook quảng bá sản phẩm với các thông tin sau:
@@ -54,10 +54,18 @@ Hãy viết một caption tiếng Việt hấp dẫn để đăng Facebook quả
 YÊU CẦU:
 1. Viết bằng tiếng Việt tự nhiên, thu hút
 2. Thêm emoji phù hợp
-3. Kèm 5-10 hashtag tiếng Việt không dấu, **đặt trên dòng mới**
+3. Đặt hashtag ở CUỐI BÀI, sau link (nếu có)
 4. Giọng văn kích thích mua hàng
-5. LUÔN ĐẶT LINK SHOPEE Ở CUỐI BÀI VIẾT NẾU CÓ
+5. LUÔN ĐẶT LINK SHOPEE TRƯỚC HASHTAG NẾU CÓ
 6. Không đề cập đến "caption" trong nội dung trả về
+7. Đảm bảo cấu trúc: [Nội dung chính] -> [Link] -> [Hashtag]
+
+Cấu trúc mong muốn:
+[Nội dung chính]
+
+[Link (nếu có)]
+
+[Hashtag]
 
 Chỉ trả về nội dung hoàn chỉnh, không giải thích thêm.
 ${shopeeInfo}
@@ -75,10 +83,11 @@ ${shopeeInfo}
     });
 
     const data = await response.json();
-    return data.response?.trim() || `🔥 ${product.productName} - Sản phẩm chất lượng!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n👉 Mua ngay: ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal`;
+    return data.response?.trim() || 
+      `🔥 ${product.productName} - Sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`;
   } catch (error) {
     console.error('Lỗi khi tạo caption:', getErrorMessage(error));
-    return `🎯 ${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 Mua ngay: ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
+    return `🎯 ${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
   }
 }
 
@@ -218,21 +227,21 @@ async function postToFacebook(
     throw new Error(`Lỗi đăng bài: ${errorMessage}`);
   }
 }
-
-// API GET - Lấy danh sách sản phẩm
 export async function GET(request: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
     const populate = searchParams.get('populate');
     const categorySlug = searchParams.get('category');
     const searchTerm = searchParams.get('search')?.trim();
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '8');
 
     let mongoQuery: any = {};
 
     if (categorySlug) {
       const category = await Category.findOne({ slug: categorySlug });
       if (category) mongoQuery.categories = category._id;
-      else return NextResponse.json({ success: true, data: [] }, { status: 200 });
+      else return NextResponse.json({ success: true, data: [], total: 0 }, { status: 200 });
     }
 
     if (searchTerm) {
@@ -242,15 +251,33 @@ export async function GET(request: Request): Promise<NextResponse> {
       ];
     }
 
-    let query = Product.find(mongoQuery).sort({ createdAt: -1 });
+    // Tạo query cơ bản
+    let query = Product.find(mongoQuery)
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Thêm populate nếu được yêu cầu
     if (populate === 'categories') {
       query = query.populate({ path: 'categories', select: '_id name slug' });
     }
 
-    const products = await query.exec();
+    // Thực hiện song song cả query và count
+    const [products, total] = await Promise.all([
+      query.exec(),
+      Product.countDocuments(mongoQuery)
+    ]);
+
     const clientProducts = products.map(convertToClientProduct);
 
-    return NextResponse.json({ success: true, data: clientProducts }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      data: clientProducts,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Lỗi khi lấy danh sách sản phẩm' }, 
@@ -279,13 +306,16 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     await product.save();
 
-    // Tạo caption với URL Shopee ở cuối
+    // Tạo caption với cấu trúc mới
     let caption = await generateFullCaptionWithOllama(product);
 
-    // Đảm bảo URL Shopee ở cuối nếu có
+    // Đảm bảo cấu trúc đúng nếu AI không tuân thủ
     if (product.shopeeUrl && !caption.includes(product.shopeeUrl)) {
-      caption += `\n\n🛒 Mua ngay: ${product.shopeeUrl}\n\n`;
+      caption = `${caption}\n\n🔗 ${product.shopeeUrl}\n\n#khuyenmai #hotdeal`;
     }
+
+    // Chuẩn hóa lại các dòng trống
+    caption = caption.replace(/\n{3,}/g, '\n\n');
 
     // Chọn ngẫu nhiên 4 ảnh từ danh sách
     const selectedImages = (product.images || [])

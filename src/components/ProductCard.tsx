@@ -24,22 +24,25 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200">
-      <Link href={product.shopeeUrl} target="_blank" rel="noopener noreferrer">
-        <div className="relative aspect-square">
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200 h-full flex flex-col">
+      <Link href={product.shopeeUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
+        <div className="relative aspect-square flex-shrink-0">
           <Image
             src={imageSrc}
             alt={product.productName}
             fill
             className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
             onError={() => setImageSrc('/placeholder-image.jpg')}
+            priority={false}
           />
         </div>
-        <div className="p-4">
-          <h3 className="font-semibold text-lg mb-2">{product.productName}</h3>
+        <div className="p-3 flex-grow flex flex-col">
+          <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
+            {product.productName}
+          </h3>
           {product.price && (
-            <p className="text-blue-600 font-medium">
+            <p className="text-blue-600 font-medium text-sm sm:text-base mt-auto">
               {new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
@@ -51,7 +54,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               {product.categories.map(category => (
                 <span 
                   key={category._id} 
-                  className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded"
+                  className="text-[10px] sm:text-xs bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded"
                 >
                   {category.name}
                 </span>
