@@ -173,11 +173,13 @@ export default function FeedbackForm() {
           )}
         </div>
 
-        <div className="py-2">
+        <div className="py-2 flex justify-center lg:block">
+  <div className="transform scale-90 sm:scale-100">
           <ReCAPTCHA
             sitekey={process.env.NEXT_PUBLIC_GOOGLE_RECAPTCHA_SITE_KEY!}
             onChange={(token) => setRecaptchaToken(token)}
           />
+        </div>
         </div>
 
         {submitError && (
