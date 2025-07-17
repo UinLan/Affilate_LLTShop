@@ -6,7 +6,8 @@ import { IProduct } from '@/types/product';
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     await connectDB();
-    const product = await Product.findById(params.id).populate('categories');
+    const { id } = params; // Lấy id từ params đã được giải quyết
+    const product = await Product.findById(id).populate('categories');
     
     if (!product) {
       return NextResponse.json(
@@ -31,10 +32,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
     await connectDB();
+    const { id } = params; // Lấy id từ params đã được giải quyết
     const productData: Partial<IProduct> = await request.json();
     
     const updatedProduct = await Product.findByIdAndUpdate(
-      params.id,
+      id,
       productData,
       { new: true, runValidators: true }
     ).populate('categories');
@@ -61,8 +63,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
     await connectDB();
+    const { id } = params; // Lấy id từ params đã được giải quyết
     
-    const deletedProduct = await Product.findByIdAndDelete(params.id);
+    const deletedProduct = await Product.findByIdAndDelete(id);
 
     if (!deletedProduct) {
       return NextResponse.json(
