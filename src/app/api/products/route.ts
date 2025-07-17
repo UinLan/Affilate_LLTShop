@@ -40,24 +40,22 @@ async function logError(message: string): Promise<void> {
   console.error('Error Notification:', message);
   // Có thể thêm logic gửi email/notification ở đây
 }
-
-// Hàm gọi Ollama để tạo caption tiếng Việt
-async function generateFullCaptionWithOllama(product: any): Promise<string> {
+async function generateFullCaptionWithOllama(product: any, postType: 'image' | 'video' = 'image'): Promise<string> {
   const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY:\n${product.shopeeUrl}` : '';
   
   const prompt = `
 Hãy viết một bài quảng cáo tiếng Việt hấp dẫn để đăng Facebook với các thông tin sau:
 
 THÔNG TIN SẢN PHẨM:
-
 - Tên sản phẩm: ${product.productName}
+- Loại bài đăng: ${postType === 'image' ? 'Ảnh' : 'Video'}
 
 YÊU CẦU:
 1. Viết bằng tiếng Việt tự nhiên, thu hút, giọng văn kích thích mua hàng
 2. Thêm emoji phù hợp ở các vị trí thích hợp
-3. LUÔN đặt link Shopee (nếu có) ở cuối bài, trước phần hashtag
-4. Hashtag đặt ở phần cuối cùng, sau link (nếu có)
-5. Không đề cập đến "caption" hay "bài quảng cáo" trong nội dung
+3. ${postType === 'image' ? 'Nhấn mạnh vào hình ảnh sản phẩm' : 'Nhấn mạnh vào video giới thiệu sản phẩm'}
+4. LUÔN đặt link Shopee (nếu có) ở cuối bài, và MỖI THÀNH PHẦN (nội dung, link, hashtag) PHẢI nằm ở MỘT DÒNG RIÊNG
+5. Hashtag nằm trên dòng RIÊNG, LUÔN đặt ở dòng CUỐI CÙNG sau link (nếu có)
 6. Tự nhiên, không lặp lại cấu trúc quá cứng nhắc
 
 CẤU TRÚC MONG MUỐN:
@@ -65,7 +63,7 @@ CẤU TRÚC MONG MUỐN:
 [Link mua hàng]
 [Hashtag]
 
-Chỉ trả về nội dung hoàn chỉnh, không giải thích thêm.
+⚠️ CHỈ TRẢ VỀ phần nội dung bài viết tiếng Việt hoàn chỉnh. KHÔNG được thêm bất kỳ lời giới thiệu nào, kể cả bằng tiếng Anh hay tiếng Việt.
 ${shopeeInfo}
 `.trim();
 
@@ -82,13 +80,16 @@ ${shopeeInfo}
 
     const data = await response.json();
     return data.response?.trim() || 
-      `${product.productName} - Sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`;
+      (postType === 'image' 
+        ? `${product.productName} - Xem ngay hình ảnh sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`
+        : `${product.productName} - Xem video giới thiệu sản phẩm!\n\n🎥 Video chi tiết sản phẩm\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#video #review #sanphammoi`);
   } catch (error) {
     console.error('Lỗi khi tạo caption:', getErrorMessage(error));
-    return `${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
+    return postType === 'image'
+      ? `${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`
+      : `🎥 VIDEO: ${product.productName}\n\n${product.description || 'Xem ngay video giới thiệu sản phẩm'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#video #review`;
   }
 }
-
 
 async function uploadImageToFacebook(imageUrl: string): Promise<{ id: string }> {
   try {
@@ -275,7 +276,6 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 }
-
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const productData: Omit<IProduct, 'postedHistory' | 'createdAt'> = await request.json();
@@ -295,16 +295,9 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     await product.save();
 
-    // Tạo caption với cấu trúc mới
-    let caption = await generateFullCaptionWithOllama(product);
-
-    // Đảm bảo cấu trúc đúng nếu AI không tuân thủ
-    if (product.shopeeUrl && !caption.includes(product.shopeeUrl)) {
-      caption = `${caption}\n\n🔗 ${product.shopeeUrl}\n\n#khuyenmai #hotdeal`;
-    }
-
-    // Chuẩn hóa lại các dòng trống
-    caption = caption.replace(/\n{3,}/g, '\n\n');
+    // Tạo caption riêng cho ảnh
+    const imageCaption = await generateFullCaptionWithOllama(product, 'image');
+    let videoCaption = '';
 
     // Chọn ngẫu nhiên 4 ảnh từ danh sách
     const selectedImages = (product.images || [])
@@ -329,28 +322,29 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Lưu lịch sử đăng bài
     const postHistories = [];
 
-    // Trường hợp 1: Chỉ có hình ảnh - đăng 1 bài post hình ảnh
+    // Đăng bài hình ảnh
     const imagePostResult = await postImagesToFacebook(
-      caption,
+      imageCaption,
       uploadedImages.map(img => img.id)
     );
     postHistories.push(new PostHistory({
       productId: product._id,
       postId: imagePostResult.id,
-      caption,
+      caption: imageCaption,
       imagesUsed: uploadedImages.length,
       videoUsed: false,
       timestamp: new Date()
     }));
 
-    // Trường hợp 2: Có cả video - đăng thêm 1 bài post video riêng
+    // Nếu có video, tạo caption riêng và đăng
     if (product.videoUrl && product.videoUrl.trim() !== '') {
       try {
-        const videoPostResult = await postVideoToFacebook(caption, product.videoUrl);
+        videoCaption = await generateFullCaptionWithOllama(product, 'video');
+        const videoPostResult = await postVideoToFacebook(videoCaption, product.videoUrl);
         postHistories.push(new PostHistory({
           productId: product._id,
           postId: videoPostResult.id,
-          caption,
+          caption: videoCaption,
           imagesUsed: 0,
           videoUsed: true,
           timestamp: new Date()
@@ -374,9 +368,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         product: convertToClientProduct(product),
         posts: postHistories.map(post => ({
           postId: post.postId,
-          isVideo: post.videoUsed
+          isVideo: post.videoUsed,
+          caption: post.caption
         })),
-        caption,
+        imageCaption,
+        videoCaption: product.videoUrl ? videoCaption : undefined,
         imagesUploaded: uploadedImages.length,
         videoUploaded: !!product.videoUrl
       },
