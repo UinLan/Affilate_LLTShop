@@ -7,6 +7,8 @@ import { IProduct } from '@/types/product';
 import { convertToClientProduct } from '@/lib/converters';
 import Category from '@/lib/models/Category';
 import PostHistory from '@/lib/models/PostHistory';
+import FormData from 'form-data';
+import { Readable } from 'stream';
 import axios from 'axios';
 
 // Kết nối cơ sở dữ liệu
@@ -87,28 +89,50 @@ ${shopeeInfo}
   }
 }
 
-// Tải ảnh lên Facebook
+
 async function uploadImageToFacebook(imageUrl: string): Promise<{ id: string }> {
   try {
-    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    // Tải ảnh từ URL
+    const response = await axios.get(imageUrl, { 
+      responseType: 'arraybuffer',
+      timeout: 10000 // Thêm timeout để tránh treo quá lâu
+    });
+    
+    // Tạo stream từ buffer
     const imageBuffer = Buffer.from(response.data, 'binary');
-    const blob = new Blob([imageBuffer], { type: response.headers['content-type'] || 'image/jpeg' });
-
+    const imageStream = Readable.from(imageBuffer);
+    
+    // Tạo FormData
     const formData = new FormData();
     formData.append('access_token', FACEBOOK_ACCESS_TOKEN!);
-    formData.append('source', blob, 'image.jpg');
     formData.append('published', 'false');
+    
+    // Thêm ảnh vào formData dưới dạng stream
+    formData.append('source', imageStream, {
+      filename: 'image.jpg',
+      contentType: response.headers['content-type'] || 'image/jpeg',
+      knownLength: imageBuffer.length // Thêm thông tin về kích thước file
+    });
 
+    // Gửi request với headers phù hợp
     const uploadResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/photos`,
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      { 
+        headers: {
+          ...formData.getHeaders(),
+          'Content-Length': formData.getLengthSync() // Thêm header Content-Length
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 30000 // Tăng timeout cho upload
+      }
     );
 
     return uploadResponse.data;
   } catch (error) {
     console.error(`Lỗi khi tải ảnh lên Facebook: ${imageUrl}`, getErrorMessage(error));
-    throw error;
+    throw new Error(`Không thể tải ảnh lên: ${getErrorMessage(error)}`);
   }
 }
 
@@ -132,95 +156,64 @@ async function validateVideoUrl(url: string): Promise<{ valid: boolean; size: nu
   }
 }
 
-// Đăng bài lên Facebook
-async function postToFacebook(
-  caption: string, 
-  imageIds: string[], 
-  videoUrl?: string
-): Promise<{ id: string; video_uploaded: boolean }> {
+// Đăng bài chỉ hình ảnh lên Facebook
+async function postImagesToFacebook(caption: string, imageIds: string[]): Promise<{ id: string }> {
   try {
-    let attachedMedia = imageIds.map(id => ({ media_fbid: id }));
-    
-    if (videoUrl && videoUrl.trim() !== '') {
-      try {
-        // Bước 1: Kiểm tra video URL
-        const videoInfo = await validateVideoUrl(videoUrl);
-        
-        // Bước 2: Tạo video container
-        const initResponse = await axios.post(
-          `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/videos`,
-          {
-            access_token: FACEBOOK_ACCESS_TOKEN,
-            upload_phase: 'start',
-            file_size: videoInfo.size,
-            file_url: videoUrl,
-            published: false,
-            description: caption
-          },
-          { timeout: 10000 }
-        );
-
-        if (!initResponse.data.video_id) {
-          throw new Error('Không thể khởi tạo upload video');
-        }
-
-        const videoId = initResponse.data.video_id;
-
-        // Bước 3: Transfer video từ URL
-        await axios.post(
-          `https://graph.facebook.com/${FB_API_VERSION}/${videoId}`,
-          {
-            access_token: FACEBOOK_ACCESS_TOKEN,
-            upload_phase: 'transfer',
-            start_offset: 0,
-            end_offset: videoInfo.size,
-            file_url: videoUrl
-          },
-          { timeout: 30000 }
-        );
-
-        // Bước 4: Hoàn tất upload
-        await axios.post(
-          `https://graph.facebook.com/${FB_API_VERSION}/${videoId}`,
-          {
-            access_token: FACEBOOK_ACCESS_TOKEN,
-            upload_phase: 'finish',
-            description: caption,
-            published: true
-          },
-          { timeout: 10000 }
-        );
-
-        attachedMedia.push({ media_fbid: videoId });
-        
-        console.log(`Đã upload video thành công: ${videoId}`);
-      } catch (error) {
-        const errorMessage = getErrorMessage(error);
-        console.error('Lỗi khi đăng video:', errorMessage);
-        await logError(`Lỗi video: ${errorMessage}`);
-      }
-    }
-
-    // Đăng bài với media đã chuẩn bị
     const postResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/feed`,
       {
         access_token: FACEBOOK_ACCESS_TOKEN,
         message: caption,
-        attached_media: attachedMedia,
+        attached_media: imageIds.map(id => ({ media_fbid: id })),
         published: true
       },
       { timeout: 15000 }
     );
     
-    return {
-      ...postResponse.data,
-      video_uploaded: !!videoUrl
-    };
+    return postResponse.data;
   } catch (error) {
     const errorMessage = getErrorMessage(error);
-    console.error('Lỗi khi đăng bài lên Facebook:', errorMessage);
-    throw new Error(`Lỗi đăng bài: ${errorMessage}`);
+    console.error('Lỗi khi đăng bài hình ảnh lên Facebook:', errorMessage);
+    throw new Error(`Lỗi đăng bài hình ảnh: ${errorMessage}`);
+  }
+}
+
+// Đăng bài chỉ video lên Facebook
+async function postVideoToFacebook(caption: string, videoUrl: string): Promise<{ id: string }> {
+  try {
+    // Bước 1: Tải video từ URL về dưới dạng stream
+    const response = await axios.get(videoUrl, { responseType: 'stream' });
+    const contentType = response.headers['content-type'] || 'video/mp4';
+
+    const form = new FormData();
+    form.append('access_token', FACEBOOK_ACCESS_TOKEN!);
+    form.append('description', caption);
+    form.append('file', response.data, {
+      filename: 'video.mp4',
+      contentType
+    });
+
+    // Bước 2: Upload video lên Facebook qua form-data
+    const uploadResponse = await axios.post(
+      `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/videos`,
+      form,
+      {
+        headers: form.getHeaders(),
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+        timeout: 120000 // timeout tăng lên để tránh lỗi với video lớn
+      }
+    );
+
+    if (!uploadResponse.data.id) {
+      throw new Error('Facebook không trả về video ID');
+    }
+
+    return { id: uploadResponse.data.id };
+  } catch (error) {
+    const errorMessage = getErrorMessage(error);
+    console.error('Lỗi khi đăng video lên Facebook:', errorMessage);
+    throw new Error(`Lỗi đăng video: ${errorMessage}`);
   }
 }
 
@@ -333,23 +326,43 @@ export async function POST(request: Request): Promise<NextResponse> {
       throw new Error('Không thể tải lên bất kỳ hình ảnh nào');
     }
 
-    // Đăng bài lên Facebook (cả ảnh và video nếu có)
-    const postResult = await postToFacebook(
-      caption,
-      uploadedImages.map(img => img.id),
-      product.videoUrl
-    );
-
     // Lưu lịch sử đăng bài
-    const postHistory = new PostHistory({
+    const postHistories = [];
+
+    // Trường hợp 1: Chỉ có hình ảnh - đăng 1 bài post hình ảnh
+    const imagePostResult = await postImagesToFacebook(
+      caption,
+      uploadedImages.map(img => img.id)
+    );
+    postHistories.push(new PostHistory({
       productId: product._id,
-      postId: postResult.id,
+      postId: imagePostResult.id,
       caption,
       imagesUsed: uploadedImages.length,
-      videoUsed: !!product.videoUrl,
+      videoUsed: false,
       timestamp: new Date()
-    });
-    await postHistory.save();
+    }));
+
+    // Trường hợp 2: Có cả video - đăng thêm 1 bài post video riêng
+    if (product.videoUrl && product.videoUrl.trim() !== '') {
+      try {
+        const videoPostResult = await postVideoToFacebook(caption, product.videoUrl);
+        postHistories.push(new PostHistory({
+          productId: product._id,
+          postId: videoPostResult.id,
+          caption,
+          imagesUsed: 0,
+          videoUsed: true,
+          timestamp: new Date()
+        }));
+      } catch (error) {
+        console.error('Lỗi khi đăng video:', getErrorMessage(error));
+        await logError(`Lỗi video: ${getErrorMessage(error)}`);
+      }
+    }
+
+    // Lưu tất cả lịch sử đăng bài
+    await PostHistory.insertMany(postHistories);
 
     // Cập nhật sản phẩm
     product.lastPosted = new Date();
@@ -359,7 +372,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       success: true, 
       data: {
         product: convertToClientProduct(product),
-        postId: postResult.id,
+        posts: postHistories.map(post => ({
+          postId: post.postId,
+          isVideo: post.videoUsed
+        })),
         caption,
         imagesUploaded: uploadedImages.length,
         videoUploaded: !!product.videoUrl
