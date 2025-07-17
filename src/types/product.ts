@@ -52,6 +52,7 @@ export interface IProduct extends Document {
   description?: string;
   price?: number;
   images: string[];
+  videoUrl?: string;
   postingTemplates?: IPostingTemplate[];
   postedHistory?: IPostHistory[];
   categories?: Types.ObjectId[] | ICategory[];
@@ -66,6 +67,7 @@ export interface IProductClient {
   description?: string;
   price?: number;
   images: string[];
+  videoUrl?: string;
   postingTemplates?: IPostingTemplate[];
   postedHistory?: Array<{
     templateUsed: string;

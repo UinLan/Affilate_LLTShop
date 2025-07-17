@@ -44,27 +44,23 @@ async function generateFullCaptionWithOllama(product: any): Promise<string> {
   const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY:\n${product.shopeeUrl}` : '';
   
   const prompt = `
-Hãy viết một caption tiếng Việt hấp dẫn để đăng Facebook quảng bá sản phẩm với các thông tin sau:
+Hãy viết một bài quảng cáo tiếng Việt hấp dẫn để đăng Facebook với các thông tin sau:
+
+THÔNG TIN SẢN PHẨM:
 
 - Tên sản phẩm: ${product.productName}
-- Mô tả: ${product.description || 'Không có mô tả chi tiết'}
-- Giá bán: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'} 
-- Khuyến mãi: ${product.discount || 'Đang có ưu đãi hấp dẫn'}
 
 YÊU CẦU:
-1. Viết bằng tiếng Việt tự nhiên, thu hút
-2. Thêm emoji phù hợp
-3. Đặt hashtag ở CUỐI BÀI, sau link (nếu có)
-4. Giọng văn kích thích mua hàng
-5. LUÔN ĐẶT LINK SHOPEE TRƯỚC HASHTAG NẾU CÓ
-6. Không đề cập đến "caption" trong nội dung trả về
-7. Đảm bảo cấu trúc: [Nội dung chính] -> [Link] -> [Hashtag]
+1. Viết bằng tiếng Việt tự nhiên, thu hút, giọng văn kích thích mua hàng
+2. Thêm emoji phù hợp ở các vị trí thích hợp
+3. LUÔN đặt link Shopee (nếu có) ở cuối bài, trước phần hashtag
+4. Hashtag đặt ở phần cuối cùng, sau link (nếu có)
+5. Không đề cập đến "caption" hay "bài quảng cáo" trong nội dung
+6. Tự nhiên, không lặp lại cấu trúc quá cứng nhắc
 
-Cấu trúc mong muốn:
-[Nội dung chính]
-
-[Link (nếu có)]
-
+CẤU TRÚC MONG MUỐN:
+[Nội dung chính giới thiệu sản phẩm]
+[Link mua hàng]
 [Hashtag]
 
 Chỉ trả về nội dung hoàn chỉnh, không giải thích thêm.
@@ -84,10 +80,10 @@ ${shopeeInfo}
 
     const data = await response.json();
     return data.response?.trim() || 
-      `🔥 ${product.productName} - Sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`;
+      `${product.productName} - Sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`;
   } catch (error) {
     console.error('Lỗi khi tạo caption:', getErrorMessage(error));
-    return `🎯 ${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
+    return `${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`;
   }
 }
 
@@ -227,6 +223,7 @@ async function postToFacebook(
     throw new Error(`Lỗi đăng bài: ${errorMessage}`);
   }
 }
+
 export async function GET(request: Request): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url);
@@ -286,7 +283,6 @@ export async function GET(request: Request): Promise<NextResponse> {
   }
 }
 
-// API POST - Tạo sản phẩm mới và đăng lên Facebook
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const productData: Omit<IProduct, 'postedHistory' | 'createdAt'> = await request.json();
