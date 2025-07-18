@@ -1,8 +1,15 @@
 import Category from '@/lib/models/Category';
 import connectDB from '@/lib/mongodb';
 import { convertToClientCategory } from '@/lib/converters';
-import HomePageClient from '@/components/HomePageClient';
+// import HomePageClient from '@/components/HomePageClient';
 import FeedbackForm from '@/components/FeedbackForm';
+import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
+
+const HomePageClient = dynamic(() => import('@/components/HomePageClient'), {
+  ssr: false,
+});
+
 
 export default async function HomePage() {
   await connectDB();
@@ -19,7 +26,9 @@ export default async function HomePage() {
 
     {/* Container chính */}
     <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+       <Suspense fallback={<div>Đang tải sản phẩm...</div>}>
       <HomePageClient categories={clientCategories} />
+      </Suspense>
          {/* Feedback Section */}
         <div className="mt-16 bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Giúp chúng tôi cải thiện</h2>
