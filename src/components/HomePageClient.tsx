@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Suspense } from 'react';
 import CategoryFilter from './CategoryFilter';
 import ProductList from './ProductsList';
 import SearchBar from './SearchBar';
@@ -48,14 +49,14 @@ export default function HomePageClient({ categories }: HomePageClientProps) {
       }} />
       
       <CategoryFilter categories={categories} />
-      
+       <Suspense fallback={<div className="text-center py-8">Đang tải sản phẩm...</div>}>
       <ProductList 
         searchTerm={searchTerm} 
         currentPage={currentPage} 
         itemsPerPage={itemsPerPage}
         onTotalChange={updateTotalItems}
       />
-      
+      </Suspense>
       <PaginationControls 
         currentPage={currentPage}
         totalItems={totalItems}
