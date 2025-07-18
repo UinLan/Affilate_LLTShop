@@ -4,6 +4,7 @@ import { convertToClientCategory } from '@/lib/converters';
 // import HomePageClient from '@/components/HomePageClient';
 import FeedbackForm from '@/components/FeedbackForm';
 import HomeWrapper from '@/components/HomeWrapper';
+import Image from 'next/image';
 export default async function HomePage() {
   await connectDB();
 
@@ -13,7 +14,19 @@ export default async function HomePage() {
   );
 
   return (
+    <>
+
   <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden relative">
+   <div className="absolute top-4 left-4 z-20">
+  <Image
+    src="/logo_lltshop.jpg"
+    alt="LLT Shop Logo"
+    width={100}
+    height={100}
+    className="rounded-full object-contain shadow-md"
+    priority
+  />
+</div>
     {/* Pattern overlay tạo chiều sâu */}
     <div className="absolute inset-0 bg-[url('https://uploads-ssl.webflow.com/627a1044a798e6627445c8d1/627a1045a798e66a3b45c943_noise.png')] opacity-10 mix-blend-overlay pointer-events-none"></div>
 
@@ -44,5 +57,6 @@ export default async function HomePage() {
   </div>
 </footer>
   </div>
+  </>
 );
 }
