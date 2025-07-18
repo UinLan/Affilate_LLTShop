@@ -31,6 +31,7 @@ export interface ICategory extends Document {
   slug: string;
   description?: string;
   image?: string;
+  videoUrl?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -41,6 +42,7 @@ export interface ICategoryClient {
   slug: string;
   description?: string;
   image?: string;
+  videoUrl?: string;
   createdAt?: string;
   updatedAt?: string;
 }

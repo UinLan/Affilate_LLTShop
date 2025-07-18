@@ -44,7 +44,7 @@ async function generateFullCaptionWithOllama(product: any, postType: 'image' | '
   const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY:\n${product.shopeeUrl}` : '';
   
   const prompt = `
-Hãy viết một bài quảng cáo tiếng Việt hấp dẫn để đăng Facebook với các thông tin sau:
+Hãy viết một bài quảng cáo tiếng Việt hấp dẫn để đăng Facebook với các thông tin sau và chỉ trả về nội dung bài viết kèm hagtag, lưu ý không thêm bất kỳ lời giới thiệu nào vào đầu nội dung bài viết:
 
 THÔNG TIN SẢN PHẨM:
 - Tên sản phẩm: ${product.productName}
@@ -63,7 +63,7 @@ CẤU TRÚC MONG MUỐN:
 [Link mua hàng]
 [Hashtag]
 
-⚠️ CHỈ TRẢ VỀ phần nội dung bài viết tiếng Việt hoàn chỉnh. KHÔNG được thêm bất kỳ lời giới thiệu nào, kể cả bằng tiếng Anh hay tiếng Việt.
+CHỈ TRẢ VỀ phần nội dung bài viết tiếng Việt hoàn chỉnh. KHÔNG được thêm bất kỳ lời giới thiệu nào, kể cả bằng tiếng Anh hay tiếng Việt.
 ${shopeeInfo}
 `.trim();
 
