@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "LLT Shop",
    description: "LLT Shop - Nơi mua sắm đáng tin cậy",
   icons: {
-    icon: "/logo_lltshop.jpg", // hoặc .ico / .png nếu bạn có
+    icon: "/favicon.png", // hoặc .ico / .png nếu bạn có
   },
 };
 
