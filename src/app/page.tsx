@@ -17,13 +17,14 @@ export default async function HomePage() {
     <>
 
   <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 overflow-hidden relative">
-   <div className="absolute top-4 left-4 z-20">
+<div className="absolute top-4 left-4 z-20">
   <Image
     src="/logo_lltshop.jpg"
     alt="LLT Shop Logo"
     width={100}
     height={100}
-    className="rounded-full object-contain shadow-md"
+    className="rounded-full object-contain shadow-md 
+               w-14 h-14 sm:w-24 sm:h-24 md:w-28 md:h-28"
     priority
   />
 </div>
