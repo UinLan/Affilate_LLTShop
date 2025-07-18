@@ -110,6 +110,7 @@ export function convertToClientProduct(product: IProduct & Document): IProductCl
     description: product.description || undefined,
     price: product.price || undefined,
     images: product.images || [],
+    videoUrl: product.videoUrl || undefined,
     postingTemplates: processPostingTemplates(),
     postedHistory: processPostHistory(),
     categories: processCategories(product.categories),

@@ -1,9 +1,11 @@
+// components/ProductCard.tsx
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { IProductClient } from '@/types/product';
 import { useState } from 'react';
+import ProductModal from './ProductModal';
 
 interface ProductCardProps {
   product: IProductClient;
@@ -13,6 +15,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [imageSrc, setImageSrc] = useState(
     isValidImageUrl(product.images[0]) ? product.images[0] : '/placeholder-image.jpg'
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   function isValidImageUrl(url: string) {
     try {
@@ -24,8 +27,9 @@ export default function ProductCard({ product }: ProductCardProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200 h-full flex flex-col">
-      <Link href={product.shopeeUrl} target="_blank" rel="noopener noreferrer" className="flex flex-col h-full">
+    <>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200 h-full flex flex-col">
+        {/* Phần hình ảnh vẫn giữ nguyên */}
         <div className="relative aspect-square flex-shrink-0">
           <Image
             src={imageSrc}
@@ -37,18 +41,29 @@ export default function ProductCard({ product }: ProductCardProps) {
             priority={false}
           />
         </div>
+        
         <div className="p-3 flex-grow flex flex-col">
           <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
             {product.productName}
           </h3>
+          
           {product.price && (
-            <p className="text-blue-600 font-medium text-sm sm:text-base mt-auto">
+            <p className="text-blue-600 font-medium text-sm sm:text-base">
               {new Intl.NumberFormat('vi-VN', {
                 style: 'currency',
                 currency: 'VND'
               }).format(product.price)}
             </p>
           )}
+          
+          {/* Nút Xem chi tiết */}
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 px-3 py-1 bg-gray-100 text-sm text-gray-800 rounded hover:bg-gray-200"
+          >
+            Xem chi tiết
+          </button>
+          
           {product.categories && product.categories.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {product.categories.map(category => (
@@ -62,7 +77,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             </div>
           )}
         </div>
-      </Link>
-    </div>
+      </div>
+      
+      {/* Modal chi tiết sản phẩm */}
+      <ProductModal 
+        product={product}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
   );
 }
