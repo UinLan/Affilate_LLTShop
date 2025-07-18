@@ -45,7 +45,7 @@ export default async function CategoryPage({ params }: { params: { slug: string 
 
     return {
       _id: product._id.toString(),
-      tiktokUrl: product.tiktokUrl,
+      shopeeUrl: product.tiktokUrl,
       productName: product.productName,
       description: product.description,
       price: product.price,

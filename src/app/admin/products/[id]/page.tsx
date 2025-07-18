@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
 import { IProduct } from '@/types/product';
 import { FiArrowLeft, FiEdit, FiTrash2 } from 'react-icons/fi';
 
