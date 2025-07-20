@@ -138,7 +138,7 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
         >
           {/* Nút "Tất cả" - Giữ gradient như cũ nhưng sắc nét hơn */}
           <button
-            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md border-2 ${
+            className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md ${
               !currentCategory
                 ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
                 : 'bg-white/90 text-gray-800 border-gray-200 hover:bg-white hover:border-blue-400 hover:text-blue-600 backdrop-blur-sm'
@@ -152,7 +152,7 @@ export default function CategoryFilter({ categories }: CategoryFilterProps) {
           {categories.map((category) => (
             <button
               key={category._id}
-              className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md border-2 ${
+              className={`flex-shrink-0 px-5 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap transition-all duration-300 shadow-md ${
                 currentCategory === category.slug
                   ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent hover:shadow-lg hover:from-blue-600 hover:to-purple-700'
                   : 'bg-white/90 text-gray-800 border-gray-200 hover:bg-white hover:border-blue-400 hover:text-blue-600 backdrop-blur-sm'
