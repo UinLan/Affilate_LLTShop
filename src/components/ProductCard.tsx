@@ -62,10 +62,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Nút Xem chi tiết */}
 <button 
   onClick={() => setIsModalOpen(true)}
-  className="mt-2 px-3 py-1 rounded text-sm font-semibold text-white bg-gradient-to-r from-blue-200 to-purple-300 hover:from-blue-300 hover:to-purple-400 transition-all duration-300 shadow border border-transparent hover:shadow-md"
+  className="mt-2 px-3 py-1 rounded text-sm font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 transition-all duration-300 shadow-md border hover:shadow-lg"
 >
   Xem chi tiết
 </button>
+
           
           {product.categories && product.categories.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
