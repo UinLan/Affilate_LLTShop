@@ -30,7 +30,8 @@ export default function ProductCard({ product }: ProductCardProps) {
     <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200 h-full flex flex-col">
         {/* Phần hình ảnh vẫn giữ nguyên */}
-        <div className="relative aspect-square flex-shrink-0">
+        <Link href={product.shopeeUrl || '#'} target="_blank" rel="noopener noreferrer">
+          <div className="relative aspect-square flex-shrink-0 cursor-pointer">
           <Image
             src={imageSrc}
             alt={product.productName}
@@ -41,12 +42,14 @@ export default function ProductCard({ product }: ProductCardProps) {
             priority={false}
           />
         </div>
+        </Link>
         
         <div className="p-3 flex-grow flex flex-col">
-          <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
+         <Link href={product.shopeeUrl || '#'} target="_blank" rel="noopener noreferrer">
+           <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
             {product.productName}
           </h3>
-          
+           </Link>
           {product.price && (
             <p className="text-blue-600 font-medium text-sm sm:text-base">
               {new Intl.NumberFormat('vi-VN', {
@@ -57,12 +60,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
           
           {/* Nút Xem chi tiết */}
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="mt-2 px-3 py-1 bg-gray-100 text-sm text-gray-800 rounded hover:bg-gray-200"
-          >
-            Xem chi tiết
-          </button>
+<button 
+  onClick={() => setIsModalOpen(true)}
+  className="mt-2 px-3 py-1 rounded text-sm font-semibold text-white bg-gradient-to-r from-blue-200 to-purple-300 hover:from-blue-300 hover:to-purple-400 transition-all duration-300 shadow border border-transparent hover:shadow-md"
+>
+  Xem chi tiết
+</button>
           
           {product.categories && product.categories.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
