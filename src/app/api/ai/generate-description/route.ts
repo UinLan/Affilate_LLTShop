@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 export async function POST(request: Request) {
   try {
@@ -30,9 +30,13 @@ export async function POST(request: Request) {
     ${currentDescription}
     `;
 
-    const ollamaResponse = await fetch('http://localhost:11434/api/generate', {
+    const ollamaResponse = await fetch('https://api.lltshop.vn/api/generate', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+        headers: {
+    "Content-Type": "application/json",
+"CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID || '',
+"CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET || '',
+  },
       body: JSON.stringify({
         model: 'llama3',
         prompt,
