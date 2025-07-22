@@ -92,42 +92,63 @@ export default function EditProductPage() {
       toast.success('Đã thêm hình ảnh');
     }
   };
-
 const generateDescription = async () => {
-   if (!product || !product.description || product.description.trim().length < 20) {
+  if (!product || !product.description || product.description.trim().length < 20) {
     toast.warning('Vui lòng nhập mô tả đầy đủ trước khi tạo tóm tắt');
     return;
   }
-  
+
   setIsGeneratingDesc(true);
+  setGeneratedDesc('');
   try {
     const response = await fetch('/api/ai/generate-description', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        currentDescription: product.description || '',
-      })
+      body: JSON.stringify({ currentDescription: product.description }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to generate description');
+    if (!response.ok || !response.body) {
+      throw new Error('Không thể kết nối tới máy chủ hoặc không có dữ liệu trả về');
     }
 
-    const { description } = await response.json();
-    setGeneratedDesc(description);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let fullText = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split('\n').filter(line => line.trim());
+
+      for (const line of lines) {
+        try {
+          const json = JSON.parse(line);
+          if (json.response) {
+            fullText += json.response;
+            setGeneratedDesc(prev => prev + json.response);
+          }
+        } catch (err) {
+          console.warn('Lỗi parse JSON chunk:', err, line);
+        }
+      }
+    }
+
     setShowDescModal(true);
     toast.success('Đã tạo mô tả tóm tắt! Vui lòng xem và xác nhận.');
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to generate description';
+    const message = err instanceof Error ? err.message : 'Lỗi không xác định';
     setError(message);
     toast.error(`Lỗi: ${message}`);
   } finally {
     setIsGeneratingDesc(false);
   }
 };
+
+
 
   const applyGeneratedDesc = () => {
     if (generatedDesc && product) {
@@ -380,10 +401,13 @@ const generateDescription = async () => {
             </div>
             
             <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-50 rounded">
-              <div 
+              {/* <div 
                 className="prose max-w-none"
                 dangerouslySetInnerHTML={{ __html: generatedDesc }}
-              />
+              /> */}
+              <div className="whitespace-pre-wrap font-sans text-sm text-gray-800">
+  {generatedDesc}
+</div>
             </div>
             
             <div className="flex justify-end gap-3">

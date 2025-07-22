@@ -1,3 +1,8 @@
+console.log("Sending request to Ollama...");
+console.log("Headers:", {
+  "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID,
+  "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET,
+});
 import { NextResponse } from 'next/server';
 
 export const runtime = 'nodejs';
@@ -30,59 +35,102 @@ export async function POST(request: Request) {
     ${currentDescription}
     `;
 
-    const ollamaResponse = await fetch('https://api.lltshop.vn/api/generate', {
+//     const ollamaResponse = await fetch('https://api.lltshop.vn/api/generate', {
+//       method: 'POST',
+//         headers: {
+//     "Content-Type": "application/json",
+// "CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID || '',
+// "CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET || '',
+//   },
+//       body: JSON.stringify({
+//         model: 'llama3',
+//         prompt,
+//         stream: true,
+//         options: {
+//           temperature: 0.3,
+//           top_p: 0.8,
+//           max_tokens: 300,
+//         }
+//       }),
+//     });
+
+//     if (!ollamaResponse.ok) {
+//       const error = await ollamaResponse.text();
+//       throw new Error(`Lỗi Ollama API: ${error}`);
+//     }
+
+//     const result = await ollamaResponse.json();
+//     let description = result.response.trim();
+
+//     // Xử lý kết quả triệt để hơn
+//     description = description.replace(/^"+|"+$/g, '');
+//     description = description.replace(/\\n/g, '\n');
+//     // Loại bỏ các cụm giới thiệu và đảm bảo tiếng Việt
+//     description = description.replace(/^(Here is|Đây là|Kết quả|Here's the|Output).*?\n+/i, '');
+//     description = description.replace(/^.*formatted output.*?\n+/i, '');
+//     description = description.replace(/^\n+/, '');
+//     // Loại bỏ tất cả các ký tự format tiêu đề
+//     description = description.replace(/^[*\-~=]{2}(.*?)[*\-~=]{2}/gm, '$1'); // Bỏ ** -- ~~ ==
+//     // Chuẩn hóa khoảng cách dòng
+//     description = description.replace(/\n\n+/g, '\n\n');
+
+//     // Kiểm tra và chuyển đổi sang tiếng Việt nếu cần
+//     const vietnameseRatio = (description.match(/[àáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]/gi) || []).length / description.length;
+    
+//     if (vietnameseRatio < 0.1) {
+//       throw new Error('Kết quả không phải tiếng Việt');
+//     }
+
+//     return NextResponse.json({ description });
+//   } catch (error) {
+//     console.error('Lỗi khi tạo mô tả:', error);
+//     return NextResponse.json(
+//       { 
+//         error: error instanceof Error ? error.message : 'Không thể định dạng mô tả',
+//         suggestion: 'Vui lòng thử lại với nội dung khác'
+//       },
+//       { status: 500 }
+//     );
+//   }
+// }
+
+const ollamaResponse = await fetch('https://api.lltshop.vn/api/generate', {
       method: 'POST',
-        headers: {
-    "Content-Type": "application/json",
-"CF-Access-Client-Id": process.env.CF_ACCESS_CLIENT_ID || '',
-"CF-Access-Client-Secret": process.env.CF_ACCESS_CLIENT_SECRET || '',
-  },
+      headers: {
+        'Content-Type': 'application/json',
+        'CF-Access-Client-Id': process.env.CF_ACCESS_CLIENT_ID || '',
+        'CF-Access-Client-Secret': process.env.CF_ACCESS_CLIENT_SECRET || '',
+      },
       body: JSON.stringify({
         model: 'llama3',
         prompt,
-        stream: false,
+        stream: true,
         options: {
           temperature: 0.3,
           top_p: 0.8,
           max_tokens: 600,
-        }
+        },
       }),
     });
 
-    if (!ollamaResponse.ok) {
+    if (!ollamaResponse.ok || !ollamaResponse.body) {
       const error = await ollamaResponse.text();
-      throw new Error(`Lỗi Ollama API: ${error}`);
+      throw new Error(`Lỗi từ Ollama API: ${error}`);
     }
 
-    const result = await ollamaResponse.json();
-    let description = result.response.trim();
-
-    // Xử lý kết quả triệt để hơn
-    description = description.replace(/^"+|"+$/g, '');
-    description = description.replace(/\\n/g, '\n');
-    // Loại bỏ các cụm giới thiệu và đảm bảo tiếng Việt
-    description = description.replace(/^(Here is|Đây là|Kết quả|Here's the|Output).*?\n+/i, '');
-    description = description.replace(/^.*formatted output.*?\n+/i, '');
-    description = description.replace(/^\n+/, '');
-    // Loại bỏ tất cả các ký tự format tiêu đề
-    description = description.replace(/^[*\-~=]{2}(.*?)[*\-~=]{2}/gm, '$1'); // Bỏ ** -- ~~ ==
-    // Chuẩn hóa khoảng cách dòng
-    description = description.replace(/\n\n+/g, '\n\n');
-
-    // Kiểm tra và chuyển đổi sang tiếng Việt nếu cần
-    const vietnameseRatio = (description.match(/[àáảãạăắằẳẵặâấầẩẫậđèéẻẽẹêếềểễệìíỉĩịòóỏõọôốồổỗộơớờởỡợùúủũụưứừửữựỳýỷỹỵ]/gi) || []).length / description.length;
-    
-    if (vietnameseRatio < 0.1) {
-      throw new Error('Kết quả không phải tiếng Việt');
-    }
-
-    return NextResponse.json({ description });
+    // ✅ Trả trực tiếp stream về frontend
+    return new Response(ollamaResponse.body, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
   } catch (error) {
     console.error('Lỗi khi tạo mô tả:', error);
     return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Không thể định dạng mô tả',
-        suggestion: 'Vui lòng thử lại với nội dung khác'
+      {
+        error: error instanceof Error ? error.message : 'Lỗi không xác định',
+        suggestion: 'Vui lòng thử lại hoặc kiểm tra server AI',
       },
       { status: 500 }
     );
