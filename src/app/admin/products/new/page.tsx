@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { IProductForm } from '@/types/product';
+import { IProductForm, IPostingTemplate } from '@/types/product';
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -10,12 +10,24 @@ export default function NewProductPage() {
     shopeeUrl: '',
     productName: '',
     images: [''],
-    postingTemplates: [],
+    postingTemplates: [
+      { 
+        name: 'image-post',
+        content: '',
+        imageLayout: 'carousel'
+      },
+      { 
+        name: 'video-post',
+        content: '',
+        imageLayout: 'single'
+      }
+    ],
     videoUrl: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
 
   const validateForm = () => {
     if (!form.productName.trim()) {
@@ -33,7 +45,95 @@ export default function NewProductPage() {
       return false;
     }
     
+    if (!form.postingTemplates[0].content.trim()) {
+      setError('Vui lòng nhập tiêu đề cho hình ảnh');
+      return false;
+    }
+    
+    if (form.videoUrl && !form.postingTemplates[1].content.trim()) {
+      setError('Vui lòng nhập tiêu đề cho video');
+      return false;
+    }
+    
     return true;
+  };
+
+  const generateCaptions = async () => {
+    if (!form.productName.trim()) {
+      setError('Vui lòng nhập tên sản phẩm trước');
+      return;
+    }
+
+    setIsGeneratingCaption(true);
+    setError('');
+
+    try {
+      // Tạo caption cho hình ảnh
+      const imageResponse = await fetch('/api/generate-caption', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama3',
+          prompt: `Hãy viết bài quảng cáo Facebook HOÀN TOÀN bằng tiếng Việt cho sản phẩm ${form.productName} với các yêu cầu:
+    1. VIẾT 100% TIẾNG VIỆT, không dùng từ tiếng Anh
+    2. Bắt đầu ngay bằng nội dung chính, không có câu giới thiệu thừa
+    3. Tập trung vào 3-4 tính năng nổi bật nhất
+    4. Dùng emoji phù hợp ở đầu mỗi tính năng
+    5. Bao gồm link mua hàng: ${form.shopeeUrl || ''}
+    6. Thêm 3-5 hashtag tiếng Việt
+    7. Giọng văn tự nhiên, hấp dẫn`,
+          stream: false,
+        }),
+      });
+
+      const imageData = await imageResponse.json();
+      
+      // Tạo caption cho video (nếu có)
+      let videoData = { result: '' };
+      if (form.videoUrl) {
+        const videoResponse = await fetch('/api/generate-caption', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'llama3',
+            prompt: `Hãy viết bài quảng cáo Facebook HOÀN TOÀN bằng tiếng Việt cho video về ${form.productName} với các yêu cầu:
+    1. VIẾT 100% TIẾNG VIỆT, không lẫn từ tiếng Anh
+    2. Bắt đầu ngay bằng nội dung chính, không có câu giới thiệu thừa
+    3. Nhấn mạnh vào tính năng thể hiện tốt qua video
+    4. Mô tả ngắn gọn nhưng sinh động
+    5. Dùng emoji đầu dòng cho mỗi tính năng
+    6. Bao gồm link: ${form.shopeeUrl || ''}
+    7. Hashtag tiếng Việt`,
+            stream: false,
+          }),
+        });
+        videoData = await videoResponse.json();
+      }
+
+      // Cập nhật form với tiêu đề mới
+      setForm(prev => ({
+        ...prev,
+        postingTemplates: [
+          { 
+            ...prev.postingTemplates[0],
+            content: imageData.result 
+          },
+          { 
+            ...prev.postingTemplates[1],
+            content: form.videoUrl ? videoData.result : '' 
+          }
+        ]
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Lỗi khi tạo tiêu đề');
+      console.error('Lỗi khi tạo tiêu đề:', err);
+    } finally {
+      setIsGeneratingCaption(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +150,11 @@ export default function NewProductPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          images: form.images.filter(img => img.trim() !== '')
+          images: form.images.filter(img => img.trim() !== ''),
+          postingTemplates: [
+            form.postingTemplates[0],
+            ...(form.videoUrl ? [form.postingTemplates[1]] : [])
+          ]
         }),
       });
 
@@ -83,6 +187,15 @@ export default function NewProductPage() {
     const newImages = [...form.images];
     newImages[index] = value;
     setForm({ ...form, images: newImages });
+  };
+
+  const handleCaptionChange = (index: number, value: string) => {
+    const newPostingTemplates = [...form.postingTemplates];
+    newPostingTemplates[index] = { 
+      ...newPostingTemplates[index],
+      content: value 
+    };
+    setForm({ ...form, postingTemplates: newPostingTemplates });
   };
 
   return (
@@ -182,7 +295,54 @@ export default function NewProductPage() {
           </div>
         </div>
 
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tiêu đề bài đăng hình ảnh <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={form.postingTemplates[0].content}
+              onChange={(e) => handleCaptionChange(0, e.target.value)}
+              className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 min-h-[100px]"
+              placeholder="Nhập tiêu đề cho bài đăng hình ảnh"
+              required
+            />
+          </div>
+
+          {form.videoUrl && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tiêu đề bài đăng video <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={form.postingTemplates[1].content}
+                onChange={(e) => handleCaptionChange(1, e.target.value)}
+                className="w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm px-3 py-2 min-h-[100px]"
+                placeholder="Nhập tiêu đề cho bài đăng video"
+                required={!!form.videoUrl}
+              />
+            </div>
+          )}
+        </div>
+
         <div className="pt-4 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={generateCaptions}
+            disabled={isGeneratingCaption}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md disabled:opacity-50 flex items-center gap-2"
+          >
+            {isGeneratingCaption ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Đang tạo tiêu đề...
+              </>
+            ) : 'Tạo tiêu đề tự động'}
+          </button>
+
           <button
             type="button"
             onClick={() => router.back()}
