@@ -12,12 +12,22 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const [imageSrc, setImageSrc] = useState(
-    isValidImageUrl(product.images[0]) ? product.images[0] : '/placeholder-image.jpg'
-  );
+  // Xác định ảnh hiển thị: ưu tiên featuredImage, nếu không có thì dùng ảnh đầu tiên
+  const getDisplayImage = () => {
+    if (product.featuredImage && isValidImageUrl(product.featuredImage)) {
+      return product.featuredImage;
+    }
+    if (product.images?.length > 0 && isValidImageUrl(product.images[0])) {
+      return product.images[0];
+    }
+    return '/placeholder-image.jpg';
+  };
+
+  const [imageSrc, setImageSrc] = useState(getDisplayImage());
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   function isValidImageUrl(url: string) {
+    if (!url) return false;
     try {
       new URL(url);
       return true;
@@ -29,27 +39,30 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <>
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-transform duration-200 h-full flex flex-col">
-        {/* Phần hình ảnh vẫn giữ nguyên */}
+        {/* Phần hình ảnh sản phẩm */}
         <Link href={product.shopeeUrl || '#'} target="_blank" rel="noopener noreferrer">
           <div className="relative aspect-square flex-shrink-0 cursor-pointer">
-          <Image
-            src={imageSrc}
-            alt={product.productName}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-            onError={() => setImageSrc('/placeholder-image.jpg')}
-            priority={false}
-          />
-        </div>
+            <Image
+              src={imageSrc}
+              alt={product.productName}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              onError={() => setImageSrc('/placeholder-image.jpg')}
+              priority={false}
+            />
+            {/* Badge ảnh đại diện nếu đang hiển thị featuredImage */}
+            {product.featuredImage && imageSrc === product.featuredImage}
+          </div>
         </Link>
         
         <div className="p-3 flex-grow flex flex-col">
-         <Link href={product.shopeeUrl || '#'} target="_blank" rel="noopener noreferrer">
-           <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
-            {product.productName}
-          </h3>
-           </Link>
+          <Link href={product.shopeeUrl || '#'} target="_blank" rel="noopener noreferrer">
+            <h3 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
+              {product.productName}
+            </h3>
+          </Link>
+          
           {product.price && (
             <p className="text-blue-600 font-medium text-sm sm:text-base">
               {new Intl.NumberFormat('vi-VN', {
@@ -60,13 +73,12 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
           
           {/* Nút Xem chi tiết */}
-<button 
-  onClick={() => setIsModalOpen(true)}
-  className="mt-2 px-3 py-1 rounded text-sm font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 transition-all duration-300 shadow-md border hover:shadow-lg"
->
-  Xem chi tiết
-</button>
-
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="mt-2 px-3 py-1 rounded text-sm font-semibold text-white bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 transition-all duration-300 shadow-md border hover:shadow-lg"
+          >
+            Xem chi tiết
+          </button>
           
           {product.categories && product.categories.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">

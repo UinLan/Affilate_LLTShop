@@ -12,6 +12,7 @@ export interface IProductForm {
   images: string[];
   postingTemplates: IPostingTemplate[]; // Đã bỏ optional (?)
   videoUrl?: string;
+  featuredImage?: string;
 }
 
 export interface IPostHistory {
@@ -32,6 +33,7 @@ export interface ICategory extends Document {
   description?: string;
   image?: string;
   videoUrl?: string;
+  featuredImage?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -43,6 +45,7 @@ export interface ICategoryClient {
   description?: string;
   image?: string;
   videoUrl?: string;
+  featuredImage?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -61,6 +64,7 @@ export interface IProduct extends Document {
   lastPosted?: Date;
   createdAt: Date;
   updatedAt: Date;
+  featuredImage?: string;
 }
 
 export interface IProductClient {
@@ -71,6 +75,7 @@ export interface IProductClient {
   price?: number;
   images: string[];
   videoUrl?: string;
+  featuredImage?: string;
   postingTemplates?: IPostingTemplate[];
   postedHistory?: Array<{
     templateUsed: string;

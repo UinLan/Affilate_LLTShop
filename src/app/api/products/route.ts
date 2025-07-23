@@ -256,9 +256,13 @@ export async function POST(request: Request): Promise<NextResponse> {
     let videoCaption = product.postingTemplates[1]?.content || '';
 
     // Chọn ngẫu nhiên 4 ảnh từ danh sách
-    const selectedImages = product.images
-      .sort(() => 0.5 - Math.random())
-      .slice(0, Math.min(product.images.length, 4));
+    // const selectedImages = product.images
+    //   .sort(() => 0.5 - Math.random())
+    //   .slice(0, Math.min(product.images.length, 4));
+    // Thay vì chọn ngẫu nhiên, sử dụng featuredImage hoặc ảnh đầu tiên
+const selectedImages = product.featuredImage 
+  ? [product.featuredImage, ...product.images.filter((img: string) => img !== product.featuredImage).slice(0, 3)]
+  : product.images.slice(0, 4);
 
     // Tải ảnh lên Facebook
     const uploadedImages = [];
