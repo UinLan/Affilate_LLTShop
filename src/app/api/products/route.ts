@@ -40,63 +40,13 @@ async function logError(message: string): Promise<void> {
   console.error('Error Notification:', message);
   // Có thể thêm logic gửi email/notification ở đây
 }
-async function generateFullCaptionWithOllama(product: any, postType: 'image' | 'video' = 'image'): Promise<string> {
-  const shopeeInfo = product.shopeeUrl ? `\n\n🔗 LINK MUA NGAY:\n${product.shopeeUrl}` : '';
-  
-  const prompt = `
-Hãy viết một bài quảng cáo tiếng Việt hấp dẫn để đăng Facebook với các thông tin sau và chỉ trả về nội dung bài viết kèm hagtag, lưu ý không thêm bất kỳ lời giới thiệu nào vào đầu nội dung bài viết:
-
-THÔNG TIN SẢN PHẨM:
-- Tên sản phẩm: ${product.productName}
-- Loại bài đăng: ${postType === 'image' ? 'Ảnh' : 'Video'}
-
-YÊU CẦU:
-1. Viết bằng tiếng Việt tự nhiên, thu hút, giọng văn kích thích mua hàng
-2. Thêm emoji phù hợp ở các vị trí thích hợp
-3. ${postType === 'image' ? 'Nhấn mạnh vào hình ảnh sản phẩm' : 'Nhấn mạnh vào video giới thiệu sản phẩm'}
-4. LUÔN đặt link Shopee (nếu có) ở cuối bài, và MỖI THÀNH PHẦN (nội dung, link, hashtag) PHẢI nằm ở MỘT DÒNG RIÊNG
-5. Hashtag nằm trên dòng RIÊNG, LUÔN đặt ở dòng CUỐI CÙNG sau link (nếu có)
-6. Tự nhiên, không lặp lại cấu trúc quá cứng nhắc
-
-CẤU TRÚC MONG MUỐN:
-[Nội dung chính giới thiệu sản phẩm]
-[Link mua hàng]
-[Hashtag]
-
-CHỈ TRẢ VỀ phần nội dung bài viết tiếng Việt hoàn chỉnh. KHÔNG được thêm bất kỳ lời giới thiệu nào, kể cả bằng tiếng Anh hay tiếng Việt.
-${shopeeInfo}
-`.trim();
-
-  try {
-    const response = await fetch('http://localhost:11434/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'llama3',
-        prompt,
-        stream: false
-      })
-    });
-
-    const data = await response.json();
-    return data.response?.trim() || 
-      (postType === 'image' 
-        ? `${product.productName} - Xem ngay hình ảnh sản phẩm chất lượng cao!\n\n💯 Giá chỉ ${product.price ? product.price.toLocaleString() + 'đ' : 'liên hệ'}\n\n✨ ${product.description || 'Đang được ưa chuộng nhất hiện nay'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#khuyenmai #hotdeal #sanphamchatluong`
-        : `${product.productName} - Xem video giới thiệu sản phẩm!\n\n🎥 Video chi tiết sản phẩm\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#video #review #sanphammoi`);
-  } catch (error) {
-    console.error('Lỗi khi tạo caption:', getErrorMessage(error));
-    return postType === 'image'
-      ? `${product.productName}\n\n🔹 ${product.description || 'Sản phẩm chất lượng cao'}\n\n💰 Giá: ${product.price ? product.price.toLocaleString() + 'đ' : 'Liên hệ'}\n\n🛒 ${product.shopeeUrl || ''}\n\n#sanphammoi #uudai`
-      : `🎥 VIDEO: ${product.productName}\n\n${product.description || 'Xem ngay video giới thiệu sản phẩm'}\n\n🔗 ${product.shopeeUrl || ''}\n\n#video #review`;
-  }
-}
 
 async function uploadImageToFacebook(imageUrl: string): Promise<{ id: string }> {
   try {
     // Tải ảnh từ URL
     const response = await axios.get(imageUrl, { 
       responseType: 'arraybuffer',
-      timeout: 10000 // Thêm timeout để tránh treo quá lâu
+      timeout: 10000
     });
     
     // Tạo stream từ buffer
@@ -107,26 +57,24 @@ async function uploadImageToFacebook(imageUrl: string): Promise<{ id: string }> 
     const formData = new FormData();
     formData.append('access_token', FACEBOOK_ACCESS_TOKEN!);
     formData.append('published', 'false');
-    
-    // Thêm ảnh vào formData dưới dạng stream
     formData.append('source', imageStream, {
       filename: 'image.jpg',
       contentType: response.headers['content-type'] || 'image/jpeg',
-      knownLength: imageBuffer.length // Thêm thông tin về kích thước file
+      knownLength: imageBuffer.length
     });
 
-    // Gửi request với headers phù hợp
+    // Gửi request
     const uploadResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/photos`,
       formData,
       { 
         headers: {
           ...formData.getHeaders(),
-          'Content-Length': formData.getLengthSync() // Thêm header Content-Length
+          'Content-Length': formData.getLengthSync()
         },
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        timeout: 30000 // Tăng timeout cho upload
+        timeout: 30000
       }
     );
 
@@ -182,7 +130,6 @@ async function postImagesToFacebook(caption: string, imageIds: string[]): Promis
 // Đăng bài chỉ video lên Facebook
 async function postVideoToFacebook(caption: string, videoUrl: string): Promise<{ id: string }> {
   try {
-    // Bước 1: Tải video từ URL về dưới dạng stream
     const response = await axios.get(videoUrl, { responseType: 'stream' });
     const contentType = response.headers['content-type'] || 'video/mp4';
 
@@ -194,7 +141,6 @@ async function postVideoToFacebook(caption: string, videoUrl: string): Promise<{
       contentType
     });
 
-    // Bước 2: Upload video lên Facebook qua form-data
     const uploadResponse = await axios.post(
       `https://graph.facebook.com/${FB_API_VERSION}/${FACEBOOK_PAGE_ID}/videos`,
       form,
@@ -202,7 +148,7 @@ async function postVideoToFacebook(caption: string, videoUrl: string): Promise<{
         headers: form.getHeaders(),
         maxContentLength: Infinity,
         maxBodyLength: Infinity,
-        timeout: 120000 // timeout tăng lên để tránh lỗi với video lớn
+        timeout: 120000
       }
     );
 
@@ -276,6 +222,7 @@ export async function GET(request: Request): Promise<NextResponse> {
     );
   }
 }
+
 export async function POST(request: Request): Promise<NextResponse> {
   try {
     const productData: Omit<IProduct, 'postedHistory' | 'createdAt'> = await request.json();
@@ -288,19 +235,28 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
+    // Kiểm tra có postingTemplates không
+    if (!productData.postingTemplates || productData.postingTemplates.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'Vui lòng cung cấp tiêu đề bài đăng' },
+        { status: 400 }
+      );
+    }
+
+    // Tạo sản phẩm mới
     const product = new Product({
       ...productData,
-      postingTemplates: productData.postingTemplates || []
+      images: productData.images.filter(img => img.trim() !== ''),
+      postingTemplates: productData.postingTemplates
     });
-
     await product.save();
 
-    // Tạo caption riêng cho ảnh
-    const imageCaption = await generateFullCaptionWithOllama(product, 'image');
-    let videoCaption = '';
+    // Lấy caption từ postingTemplates
+    const imageCaption = product.postingTemplates[0]?.content || '';
+    let videoCaption = product.postingTemplates[1]?.content || '';
 
     // Chọn ngẫu nhiên 4 ảnh từ danh sách
-    const selectedImages = (product.images || [])
+    const selectedImages = product.images
       .sort(() => 0.5 - Math.random())
       .slice(0, Math.min(product.images.length, 4));
 
@@ -312,6 +268,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         uploadedImages.push(uploadResult);
       } catch (error) {
         console.error(`Lỗi khi tải ảnh lên ${imageUrl}:`, getErrorMessage(error));
+        await logError(`Lỗi tải ảnh ${imageUrl}: ${getErrorMessage(error)}`);
       }
     }
 
@@ -336,10 +293,9 @@ export async function POST(request: Request): Promise<NextResponse> {
       timestamp: new Date()
     }));
 
-    // Nếu có video, tạo caption riêng và đăng
-    if (product.videoUrl && product.videoUrl.trim() !== '') {
+    // Nếu có video và có caption video, đăng video
+    if (product.videoUrl && product.videoUrl.trim() !== '' && videoCaption) {
       try {
-        videoCaption = await generateFullCaptionWithOllama(product, 'video');
         const videoPostResult = await postVideoToFacebook(videoCaption, product.videoUrl);
         postHistories.push(new PostHistory({
           productId: product._id,
@@ -372,9 +328,9 @@ export async function POST(request: Request): Promise<NextResponse> {
           caption: post.caption
         })),
         imageCaption,
-        videoCaption: product.videoUrl ? videoCaption : undefined,
+        videoCaption: product.videoUrl && videoCaption ? videoCaption : undefined,
         imagesUploaded: uploadedImages.length,
-        videoUploaded: !!product.videoUrl
+        videoUploaded: !!product.videoUrl && !!videoCaption
       },
       message: 'Đăng sản phẩm lên Facebook thành công'
     }, { status: 201 });

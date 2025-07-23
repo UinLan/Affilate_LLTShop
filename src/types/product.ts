@@ -1,17 +1,17 @@
 import { Types, Document } from 'mongoose';
 
-export interface IProductForm {
-  shopeeUrl: string;
-  productName: string;
-  images: string[];
-  postingTemplates?: IPostingTemplate[];
-  videoUrl?: string;
-}
-
 export interface IPostingTemplate {
   name: string;
   content: string;
   imageLayout: 'single' | 'carousel' | 'collage';
+}
+
+export interface IProductForm {
+  shopeeUrl: string;
+  productName: string;
+  images: string[];
+  postingTemplates: IPostingTemplate[]; // Đã bỏ optional (?)
+  videoUrl?: string;
 }
 
 export interface IPostHistory {
@@ -55,9 +55,10 @@ export interface IProduct extends Document {
   price?: number;
   images: string[];
   videoUrl?: string;
-  postingTemplates?: IPostingTemplate[];
+  postingTemplates: IPostingTemplate[]; // Đã bỏ optional (?)
   postedHistory?: IPostHistory[];
   categories?: Types.ObjectId[] | ICategory[];
+  lastPosted?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -82,6 +83,7 @@ export interface IProductClient {
     };
   }>;
   categories?: ICategoryClient[];
+  lastPosted?: string;
   createdAt: string;
   updatedAt: string;
 }
