@@ -110,6 +110,7 @@ export function convertToClientProduct(product: IProduct & Document): IProductCl
     description: product.description || undefined,
     price: product.price || undefined,
     images: product.images || [],
+    featuredImage: product.featuredImage ?? undefined,
     videoUrl: product.videoUrl || undefined,
     postingTemplates: processPostingTemplates(),
     postedHistory: processPostHistory(),
@@ -132,6 +133,7 @@ export function convertToServerProduct(product: IProductClient): Partial<IProduc
     description: product.description,
     price: product.price,
     images: product.images,
+    featuredImage: product.featuredImage,
     categories: convertCategories(product.categories),
     postingTemplates: product.postingTemplates || [],
     // postedHistory is typically not modified from client

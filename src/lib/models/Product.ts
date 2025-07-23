@@ -29,6 +29,7 @@ const ProductSchema = new Schema<IProduct>({
   price: Number,
   images: { type: [String], required: true },
   videoUrl: { type: String, default: '' }, 
+  featuredImage: String,
   postingTemplates: { type: [PostingTemplateSchema], default: [] },
   postedHistory: { type: [PostHistorySchema], default: [] },
   categories: [{ 

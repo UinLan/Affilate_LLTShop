@@ -107,12 +107,12 @@ export default function ProductTable() {
               className="hover:bg-gray-50 border-b"
             >
               <td className="py-3 px-4">
-                {product.images && product.images.length > 0 ? (
-                  <img
-                    src={product.images[0]}
-                    alt={product.productName}
-                    className="w-16 h-16 object-cover rounded border"
-                  />
+{product.images && product.images.length > 0 ? (
+  <img
+    src={product.featuredImage || product.images[0]}
+    alt={product.productName}
+    className="w-16 h-16 object-cover rounded border"
+  />
                 ) : (
                   <div className="w-16 h-16 flex items-center justify-center bg-gray-100 text-gray-400 text-sm border rounded">
                     Không có ảnh

@@ -16,6 +16,7 @@ interface IProduct {
   images: string[];
   videoUrl?: string;
   categories?: string[];
+  featuredImage?: string;
 }
 
 export default function EditProductPage() {
@@ -31,7 +32,12 @@ export default function EditProductPage() {
   const [newImageUrl, setNewImageUrl] = useState('');
   const [generatedDesc, setGeneratedDesc] = useState('');
   const [showDescModal, setShowDescModal] = useState(false);
-
+  const [temporaryFeaturedImage, setTemporaryFeaturedImage] = useState<string>('');
+ useEffect(() => {
+  if (product) {
+    setTemporaryFeaturedImage(product.featuredImage || product.images[0] || '');
+  }
+}, [product]);
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -55,43 +61,54 @@ export default function EditProductPage() {
     const { name, value } = e.target;
     setProduct(prev => prev ? { ...prev, [name]: value } : null);
   };
+const handleSelectFeaturedImage = (imageUrl: string) => {
+  setTemporaryFeaturedImage(imageUrl);
+  toast.success('Đã chọn ảnh đại diện, nhấn Lưu để áp dụng');
+};
+const handleRemoveImage = (index: number) => {
+  if (product) {
+    const imgToRemove = product.images[index];
+    const newImages = product.images.filter((_, i) => i !== index);
+    
+    setProduct({
+      ...product,
+      images: newImages,
+      featuredImage: product.featuredImage === imgToRemove 
+        ? newImages[0] || '' // Chọn lại ảnh đầu tiên nếu xóa ảnh đại diện
+        : product.featuredImage
+    });
+  }
+};
 
-  const handleRemoveImage = (index: number) => {
-    if (product) {
-      setProduct({
-        ...product,
-        images: product.images.filter((_, i) => i !== index)
-      });
-    }
-  };
+const handleAddImage = () => {
+  if (!newImageUrl.trim()) {
+    toast.warning('Vui lòng nhập URL hình ảnh');
+    return;
+  }
 
-  const handleAddImage = () => {
-    if (!newImageUrl.trim()) {
-      toast.warning('Vui lòng nhập URL hình ảnh');
+  try {
+    new URL(newImageUrl);
+  } catch {
+    toast.error('URL hình ảnh không hợp lệ');
+    return;
+  }
+
+  if (product) {
+    if (product.images.includes(newImageUrl)) {
+      toast.warning('Hình ảnh đã tồn tại');
       return;
     }
 
-    try {
-      new URL(newImageUrl);
-    } catch {
-      toast.error('URL hình ảnh không hợp lệ');
-      return;
-    }
-
-    if (product) {
-      if (product.images.includes(newImageUrl)) {
-        toast.warning('Hình ảnh đã tồn tại');
-        return;
-      }
-
-      setProduct({
-        ...product,
-        images: [...product.images, newImageUrl]
-      });
-      setNewImageUrl('');
-      toast.success('Đã thêm hình ảnh');
-    }
-  };
+    const newImages = [...product.images, newImageUrl];
+    setProduct({
+      ...product,
+      images: newImages,
+      featuredImage: product.featuredImage || newImageUrl // Tự động chọn ảnh đầu tiên nếu chưa có
+    });
+    setNewImageUrl('');
+    toast.success('Đã thêm hình ảnh');
+  }
+};
 const generateDescription = async () => {
   if (!product || !product.description || product.description.trim().length < 20) {
     toast.warning('Vui lòng nhập mô tả đầy đủ trước khi tạo tóm tắt');
@@ -160,33 +177,43 @@ const generateDescription = async () => {
     setShowDescModal(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!product) return;
+ // Trong file EditProductPage.tsx
+// Thay đổi hàm handleSubmit
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!product) return;
 
-    setIsSaving(true);
-    try {
-      const res = await fetch(`/api/products/${productId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(product)
-      });
+  setIsSaving(true);
+  try {
+    // Tạo object cập nhật với featuredImage từ temporaryFeaturedImage
+    const updatedProduct = {
+      ...product,
+      featuredImage: temporaryFeaturedImage // Luôn dùng giá trị từ temporaryFeaturedImage
+    };
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to update product');
-      }
+    const res = await fetch(`/api/products/${productId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updatedProduct)
+    });
 
-      toast.success('Cập nhật sản phẩm thành công!');
-      router.push('/admin');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(message);
-      toast.error(`Lỗi: ${message}`);
-    } finally {
-      setIsSaving(false);
+    if (!res.ok) throw new Error('Failed to update product');
+    
+    // Cập nhật lại cả product và temporaryFeaturedImage từ response
+    const responseData = await res.json();
+    if (responseData.data) {
+      setProduct(responseData.data);
+      setTemporaryFeaturedImage(responseData.data.featuredImage);
     }
-  };
+
+    toast.success('Cập nhật sản phẩm thành công!');
+    router.push('/admin');
+  } catch (err) {
+    // ... xử lý lỗi
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   if (loading) {
     return (
@@ -302,13 +329,20 @@ const generateDescription = async () => {
         className="object-cover"
         sizes="(max-width: 768px) 100vw, 33vw"
       />
-      <button
-        type="button"
-        onClick={() => handleRemoveImage(index)}
-        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-      >
-        <FiTrash2 size={14} />
-      </button>
+      <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1 flex justify-between">
+        <button
+          type="button"
+          onClick={() => handleSelectFeaturedImage(img)}
+          className={`text-xs px-1 rounded ${
+            temporaryFeaturedImage === img 
+              ? 'bg-green-500 text-white font-bold' // Thay đổi màu để dễ nhận biết
+              : 'bg-white text-gray-800'
+          }`}
+        >
+          {temporaryFeaturedImage === img ? '✅ Đã chọn' : 'Chọn làm ảnh đại diện'}
+        </button>
+        {/* ... nút xóa */}
+      </div>
     </div>
   ))}
 </div>
