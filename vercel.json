@@ -1,0 +1,15 @@
+{
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "destination": "https://lltshop.vn/$1",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.lltshop.vn"
+        }
+      ],
+      "permanent": true
+    }
+  ]
+}
