@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LLTShop.vn – Affiliate Platform cho KOL/KOC
 
-## Getting Started
+🚀 **LLTShop.vn** là nền tảng hỗ trợ **KOL/KOC quản lý và quảng bá sản phẩm affiliate**.  
+Người dùng có thể đăng sản phẩm, tìm kiếm theo từ khóa, và tận dụng AI để tự động sinh nội dung quảng bá.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🌐 Demo
+👉 [Website chính thức](https://lltshop.vn)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Công nghệ sử dụng
+- **Frontend:** React (App Router), Next.js, TypeScript, TailwindCSS  
+- **Backend:** Node.js, Express.js, REST API  
+- **Database:** MongoDB  
+- **AI Integration:** API sinh caption & mô tả sản phẩm  
+- **Triển khai:** Vercel Hosting  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ✨ Chức năng nổi bật
+- 📝 Đăng & quản lý sản phẩm, phân loại theo danh mục  
+- 📢 Tự động đăng bài lên **Fanpage Facebook** khi tạo sản phẩm mới  
+- 🔍 Tìm kiếm sản phẩm nhanh theo từ khóa  
+- 🤖 **AI hỗ trợ sinh caption & mô tả sản phẩm**  
+- 🔑 Đăng nhập Admin (Auth) + **Google reCAPTCHA** bảo mật  
+- 💬 Feedback từ người dùng để cải thiện sản phẩm  
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Cấu trúc thư mục
+```plaintext
+src/
+ ├─ app/                          # Next.js App Router (pages & APIs)
+ │   ├─ admin/                    # Trang quản trị
+ │   │   ├─ categories/           # CRUD danh mục
+ │   │   │   ├─ [slug]/page.tsx
+ │   │   │   ├─ edit/[id]/page.tsx
+ │   │   │   └─ new/page.tsx
+ │   │   ├─ products/             # CRUD sản phẩm
+ │   │   │   ├─ [id]/page.tsx
+ │   │   │   ├─ edit/[id]/page.tsx
+ │   │   │   └─ new/page.tsx
+ │   │   ├─ login/page.tsx        # Đăng nhập admin
+ │   │   ├─ layout.tsx            # Layout cho admin
+ │   │   └─ page.tsx              # Dashboard admin
+ │   │
+ │   ├─ api/                      # API routes (REST endpoints)
+ │   │   ├─ ai/generate-description/route.ts
+ │   │   ├─ auth/[...nextauth]/route.ts
+ │   │   ├─ categories/[id]/route.ts
+ │   │   │            └─ route.ts
+ │   │   ├─ feedback/route.ts
+ │   │   ├─ generate-caption/route.ts
+ │   │   ├─ products/[id]/categories/route.ts
+ │   │   │               └─ route.ts
+ │   │   └─ products/route.ts
+ │   │
+ │   ├─ auth/unauthorized/page.tsx
+ │   ├─ favicon.ico
+ │   ├─ globals.css
+ │   ├─ layout.tsx                # Layout chính
+ │   └─ page.tsx                  # Trang chủ
+ │
+ ├─ component/                    # UI components tái sử dụng
+ │   ├─ admin/
+ │   │   ├─ AuthGate.tsx
+ │   │   ├─ CategoryTable.tsx
+ │   │   ├─ EditProductForm.tsx
+ │   │   └─ ProductTable.tsx
+ │   ├─ CategoryFilter.tsx
+ │   ├─ FeedBackForm.tsx
+ │   ├─ HomePageClient.tsx
+ │   ├─ HomeWrapper.tsx
+ │   ├─ LoadingSkeleton.tsx
+ │   ├─ PaginationControls.tsx
+ │   ├─ ProductCart.tsx
+ │   ├─ ProductFilter.tsx
+ │   ├─ ProductModel.tsx
+ │   ├─ ProductList.tsx
+ │   └─ SearchBar.tsx
+ │
+ ├─ lib/                          # Logic nghiệp vụ & helper
+ │   ├─ models/
+ │   │   ├─ Category.ts
+ │   │   ├─ Feedback.ts
+ │   │   ├─ PostHistory.ts
+ │   │   └─ Product.ts
+ │   ├─ services/
+ │   │   └─ FacebookPoster.ts
+ │   ├─ api-helper.ts
+ │   ├─ authOptions.ts
+ │   ├─ converters.ts
+ │   ├─ db.ts
+ │   └─ mongodb.ts
+ │
+ ├─ types/                        # Kiểu dữ liệu TypeScript
+ │   ├─ next-auth.d.ts
+ │   └─ product.ts
